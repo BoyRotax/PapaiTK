@@ -168,54 +168,75 @@
 </div>
 
 <script>
-    // ⚠️ ใส่ Web App URL ที่ได้จาก Google Apps Script ตรงนี้
+    // ⚠️ ใส่ Web App URL ของคุณที่นี่
     const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ของคุณตรงนี้';
     
     let addressData = [];
 
-    // 1. โหลดข้อมูลที่อยู่จาก API ล่าสุด (GitHub)
+    // 1. โหลดข้อมูลที่อยู่ (ใช้ API ล่าสุด)
+    // ผมถอด mode: 'no-cors' ออกเพื่อให้ดึงข้อมูลมาอ่านได้ปกติ
     fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('เชื่อมต่อ API ไม่ได้');
+            return res.json();
+        })
         .then(data => {
             addressData = data;
             const provSelect = document.getElementById('province');
-            // เรียง ก-ฮ และแสดงจังหวัด
+            // เรียง ก-ฮ
             data.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(p => provSelect.add(new Option(p.name_th, p.name_th)));
-            console.log("ที่อยู่โหลดสำเร็จ");
+            console.log("✅ โหลดข้อมูลที่อยู่สำเร็จ (จำนวน " + data.length + " จังหวัด)");
         })
-        .catch(err => alert("โหลดข้อมูลที่อยู่ล้มเหลว กรุณารีเฟรชหน้าจอ"));
+        .catch(err => {
+            console.error(err);
+            alert("⚠️ โหลดข้อมูลที่อยู่ไม่สำเร็จ! กรุณาเช็คอินเทอร์เน็ตหรือรีเฟรชหน้าจอ");
+        });
 
-    // 2. ฟังก์ชันเมื่อเลือกจังหวัด -> โหลดอำเภอ (district)
+    // 2. ฟังก์ชันอัปเดตอำเภอ (ฉลาดขึ้น: เช็คทั้ง district และ amphure)
     function updateAmphoe() {
         const provName = document.getElementById('province').value;
         const ampSelect = document.getElementById('amphoe');
         const tamSelect = document.getElementById('tambon');
         
-        ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
+        ampSelect.innerHTML = '<option value="">-- กำลังโหลดอำเภอ... --</option>';
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
-        if (prov && prov.district) {
-            prov.district.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
+        
+        if (prov) {
+            // ดึงข้อมูลอำเภอ (เช็คทั้งชื่อ district และ amphure)
+            const districts = prov.district || prov.amphure || [];
+            
+            ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
+            districts.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
+            
+            console.log("📍 โหลดอำเภอของ " + provName + " สำเร็จ");
         }
     }
 
-    // 3. ฟังก์ชันเมื่อเลือกอำเภอ -> โหลดตำบล (sub_district)
+    // 3. ฟังก์ชันอัปเดตตำบล (ฉลาดขึ้น: เช็คทั้ง sub_district และ tambon)
     function updateTambon() {
         const provName = document.getElementById('province').value;
         const ampName = document.getElementById('amphoe').value;
         const tamSelect = document.getElementById('tambon');
         
-        tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+        tamSelect.innerHTML = '<option value="">-- กำลังโหลดตำบล... --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
-        const amp = prov?.district.find(d => d.name_th === ampName);
+        const districts = prov?.district || prov?.amphure || [];
+        const amp = districts.find(d => d.name_th === ampName);
         
-        if (amp && amp.sub_district) {
-            amp.sub_district.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
+        if (amp) {
+            // ดึงข้อมูลตำบล (เช็คทั้งชื่อ sub_district และ tambon)
+            const tambons = amp.sub_district || amp.tambon || [];
+            
+            tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+            tambons.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(s => tamSelect.add(new Option(s.name_th, s.name_th)));
+                
+            console.log("📍 โหลดตำบลของ " + ampName + " สำเร็จ");
         }
     }
 
@@ -232,18 +253,19 @@
 
         fetch(scriptURL, { 
             method: 'POST', 
+            // ใช้ mode: 'no-cors' เฉพาะตอนส่งไป Google Sheets เพื่อเลี่ยงปัญหา CORS
+            mode: 'no-cors', 
             body: JSON.stringify(data)
         })
-        .then(res => {
+        .then(() => {
             overlay.style.display = 'none';
-            alert('✅ บันทึกข้อมูลสำเร็จแล้ว!');
+            alert('✅ บันทึกข้อมูลของ ศพด.ทับกวาง เรียบร้อยแล้ว!');
             form.reset();
         })
         .catch(err => {
             overlay.style.display = 'none';
-            // หมายเหตุ: บางครั้ง Google Script บันทึกสำเร็จแต่จะแจ้ง Error เรื่อง CORS ให้ไปเช็คใน Sheets
-            alert('บันทึกข้อมูลเรียบร้อย (กรุณาตรวจสอบใน Google Sheets)');
-            form.reset();
+            console.error(err);
+            alert('⚠️ เกิดข้อผิดพลาด แต่ข้อมูลอาจจะเข้าแล้ว กรุณาเช็คใน Google Sheets ครับ');
         });
     });
 </script>
