@@ -25,6 +25,27 @@
             <form id="childForm">
                 <div class="section-title">1. ข้อมูลพื้นฐานเด็ก</div>
                 <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label class="form-label">ระดับชั้น</label>
+        <select name="classLevel" class="form-select" required>
+            <option value="" disabled selected>-- เลือกระดับชั้น --</option>
+            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+            <option value="อนุบาล ๑">อนุบาล ๑</option>
+            <option value="อนุบาล ๒/๑">อนุบาล ๒/๑</option>
+            <option value="อนุบาล ๒/๒">อนุบาล ๒/๒</option>
+            <option value="อนุบาล ๓">อนุบาล ๓</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">รหัสประจำตัว</label>
+        <input type="text" name="studentId" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">ชื่อ-นามสกุล</label>
+        <input type="text" name="fullName" class="form-control" required>
+    </div>
+    </div>
                     <div class="col-md-4">
                         <label class="form-label">รหัสประจำตัว</label>
                         <input type="text" name="studentId" class="form-control" required>
