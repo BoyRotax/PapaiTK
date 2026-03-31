@@ -105,33 +105,31 @@
                     </div>
                 </div>
 
-                <div class="section-title">3. ข้อมูลครอบครัวและติดต่อฉุกเฉิน</div>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label">ชื่อ-นามสกุล พ่อ</label>
-                        <input type="text" name="fatherName" class="form-control">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ชื่อ-นามสกุล แม่</label>
-                        <input type="text" name="motherName" class="form-control">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ชื่อผู้ปกครอง (ที่ติดต่อได้หลัก)</label>
-                        <input type="text" name="parentName" class="form-control" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">ความสัมพันธ์</label>
-                        <input type="text" name="relation" class="form-control" placeholder="เช่น ป้า, ยาย">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">เบอร์โทรศัพท์ฉุกเฉิน</label>
-                        <input type="tel" name="emergencyTel" class="form-control" required>
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">ที่อยู่ปัจจุบัน</label>
-                        <textarea name="address" class="form-control" rows="3"></textarea>
-                    </div>
-                </div>
+                <div class="section-title">3. ข้อมูลครอบครัวและที่อยู่</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label">จังหวัด</label>
+        <select id="province" name="province" class="form-select" required onchange="updateAmphoe()">
+            <option value="">-- เลือกจังหวัด --</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">อำเภอ/เขต</label>
+        <select id="amphoe" name="amphoe" class="form-select" required onchange="updateTambon()">
+            <option value="">-- เลือกอำเภอ --</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">ตำบล/แขวง</label>
+        <select id="tambon" name="tambon" class="form-select" required>
+            <option value="">-- เลือกตำบล --</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">บ้านเลขที่/ซอย/หมู่บ้าน</label>
+        <input type="text" name="addressDetail" class="form-control" placeholder="เช่น 123/4 ม.5">
+    </div>
+</div>
 
                 <button type="submit" id="submitBtn" class="btn btn-primary btn-submit">บันทึกข้อมูลลงระบบ</button>
             </form>
@@ -172,6 +170,54 @@
             btn.innerText = 'บันทึกข้อมูลลงระบบ';
         });
     });
+    // ดึงข้อมูลที่อยู่จากแหล่งข้อมูลฟรี
+let addressData = [];
+
+fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json')
+    .then(response => response.json())
+    .then(data => {
+        addressData = data;
+        const provinceSelect = document.getElementById('province');
+        data.forEach(p => {
+            let option = new Option(p.name_th, p.name_th);
+            provinceSelect.add(option);
+        });
+    });
+
+function updateAmphoe() {
+    const provinceName = document.getElementById('province').value;
+    const amphoeSelect = document.getElementById('amphoe');
+    const tambonSelect = document.getElementById('tambon');
+    
+    amphoeSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
+    tambonSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+    
+    const province = addressData.find(p => p.name_th === provinceName);
+    if (province) {
+        province.amphure.forEach(a => {
+            let option = new Option(a.name_th, a.name_th);
+            amphoeSelect.add(option);
+        });
+    }
+}
+
+function updateTambon() {
+    const provinceName = document.getElementById('province').value;
+    const amphoeName = document.getElementById('amphoe').value;
+    const tambonSelect = document.getElementById('tambon');
+    
+    tambonSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+    
+    const province = addressData.find(p => p.name_th === provinceName);
+    const amphoe = province?.amphure.find(a => a.name_th === amphoeName);
+    
+    if (amphoe) {
+        amphoe.tambon.forEach(t => {
+            let option = new Option(t.name_th, t.name_th);
+            tambonSelect.add(option);
+        });
+    }
+}
 </script>
 
 </body>
