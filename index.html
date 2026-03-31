@@ -3,273 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบันทึกข้อมูลเด็ก - ศพด.ทับกวาง (ป่าไผ่)</title>
-    
+    <title>ระบบบันทึกข้อมูล - ศพด.ทับกวาง (ป่าไผ่)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; color: #333; }
-        .main-card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; margin-top: 30px; margin-bottom: 50px; }
-        .header-banner { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 40px 20px; text-align: center; }
-        .section-title { background: #f8f9fa; border-left: 5px solid #007bff; padding: 10px 15px; margin: 30px 0 20px 0; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; }
-        .section-title i { margin-right: 10px; color: #007bff; }
-        .form-label { font-weight: 500; color: #495057; }
-        .btn-submit { background: linear-gradient(135deg, #28a745 0%, #218838 100%); border: none; padding: 15px; font-size: 1.2rem; font-weight: 600; transition: 0.3s; }
-        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3); }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; padding-top: 20px; }
+        .main-card { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; }
+        .header-banner { background: #007bff; color: white; padding: 30px; text-align: center; border-radius: 20px 20px 0 0; }
+        .section-title { background: #f8f9fa; border-left: 5px solid #007bff; padding: 10px; margin: 25px 0 15px 0; font-weight: 600; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
 
 <div id="loadingOverlay" class="loading-overlay">
-    <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <h4 class="mt-3 text-primary">กำลังบันทึกข้อมูล...</h4>
+    <div class="spinner-border text-primary"></div>
+    <h5 class="ms-3">กำลังบันทึกข้อมูล...</h5>
 </div>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card main-card">
-                <div class="header-banner">
-                    <i class="fas fa-user-graduate fa-3x mb-3"></i>
-                    <h2>ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง (ป่าไผ่)</h2>
-                    <p class="lead mb-0">ระบบบันทึกข้อมูลนักเรียนอิเล็กทรอนิกส์</p>
+<div class="container mb-5">
+    <div class="card main-card">
+        <div class="header-banner">
+            <i class="fas fa-school fa-2x mb-2"></i>
+            <h2>ศพด.เทศบาลเมืองทับกวาง (ป่าไผ่)</h2>
+            <p>บันทึกข้อมูลนักเรียน (ระบบฟรีผ่าน GitHub & Google Sheets)</p>
+        </div>
+        <div class="card-body p-4">
+            <form id="childForm">
+                <div class="section-title">1. ข้อมูลพื้นฐาน</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">ระดับชั้น</label>
+                        <select name="classLevel" class="form-select" required>
+                            <option value="">-- เลือก --</option>
+                            <option>เตรียมอนุบาล</option>
+                            <option>อนุบาล ๑</option>
+                            <option>อนุบาล ๒/๑</option>
+                            <option>อนุบาล ๒/๒</option>
+                            <option>อนุบาล ๓</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">รหัสประจำตัว</label>
+                        <input type="text" name="studentId" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ชื่อ-นามสกุล</label>
+                        <input type="text" name="fullName" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">ชื่อเล่น</label>
+                        <input type="text" name="nickName" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">วันเกิด</label>
+                        <input type="date" name="birthDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">เพศ</label>
+                        <select name="gender" class="form-select"><option>ชาย</option><option>หญิง</option></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">กรุ๊ปเลือด</label>
+                        <select name="bloodType" class="form-select"><option>-</option><option>A</option><option>B</option><option>AB</option><option>O</option></select>
+                    </div>
                 </div>
 
-                <div class="card-body p-4 p-md-5">
-                    <form id="childForm">
-                        
-                        <div class="section-title"><i class="fas fa-school"></i> 1. ข้อมูลระดับชั้น</div>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">ระดับชั้น</label>
-                                <select name="classLevel" class="form-select" required>
-                                    <option value="" disabled selected>-- เลือกระดับชั้น --</option>
-                                    <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                                    <option value="อนุบาล ๑">อนุบาล ๑</option>
-                                    <option value="อนุบาล ๒/๑">อนุบาล ๒/๑</option>
-                                    <option value="อนุบาล ๒/๒">อนุบาล ๒/๒</option>
-                                    <option value="อนุบาล ๓">อนุบาล ๓</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">รหัสประจำตัวนักเรียน</label>
-                                <input type="text" name="studentId" class="form-control" placeholder="ระบุรหัสประจำตัว" required>
-                            </div>
-                        </div>
-
-                        <div class="section-title"><i class="fas fa-child"></i> 2. ข้อมูลส่วนตัวและสุขภาพ</div>
-                        <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label">ชื่อ-นามสกุล</label>
-                                <input type="text" name="fullName" class="form-control" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">ชื่อเล่น</label>
-                                <input type="text" name="nickName" class="form-control">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">เพศ</label>
-                                <select name="gender" class="form-select">
-                                    <option value="ชาย">ชาย</option>
-                                    <option value="หญิง">หญิง</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">กรุ๊ปเลือด</label>
-                                <select name="bloodType" class="form-select">
-                                    <option value="-">-</option>
-                                    <option value="A">A</option>
-                                    <option value="B">B</option>
-                                    <option value="AB">AB</option>
-                                    <option value="O">O</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">วัน/เดือน/ปีเกิด</label>
-                                <input type="date" name="birthDate" class="form-control" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">น้ำหนัก (กก.)</label>
-                                <input type="number" step="0.1" name="weight" class="form-control">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">ส่วนสูง (ซม.)</label>
-                                <input type="number" step="0.1" name="height" class="form-control">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">ประวัติสุขภาพ (โรคประจำตัว / แพ้อาหาร / แพ้ยา)</label>
-                                <textarea name="healthInfo" class="form-control" rows="2" placeholder="ถ้าไม่มีให้ระบุว่า -"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="section-title"><i class="fas fa-map-marker-alt"></i> 3. ที่อยู่ปัจจุบัน</div>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">จังหวัด</label>
-                                <select id="province" name="province" class="form-select" required onchange="updateAmphoe()">
-                                    <option value="">-- เลือกจังหวัด --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">อำเภอ/เขต</label>
-                                <select id="amphoe" name="amphoe" class="form-select" required onchange="updateTambon()">
-                                    <option value="">-- เลือกอำเภอ --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">ตำบล/แขวง</label>
-                                <select id="tambon" name="tambon" class="form-select" required>
-                                    <option value="">-- เลือกตำบล --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">รายละเอียดที่อยู่ (บ้านเลขที่/ซอย/หมู่)</label>
-                                <input type="text" name="addressDetail" class="form-control" placeholder="เช่น 123/4 หมู่ 5">
-                            </div>
-                        </div>
-
-                        <div class="section-title"><i class="fas fa-users"></i> 4. ข้อมูลครอบครัวและติดต่อฉุกเฉิน</div>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">ชื่อ-นามสกุล บิดา</label>
-                                <input type="text" name="fatherName" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">ชื่อ-นามสกุล มารดา</label>
-                                <input type="text" name="motherName" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">ชื่อผู้ปกครองที่ติดต่อหลัก</label>
-                                <input type="text" name="parentName" class="form-control" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">ความสัมพันธ์</label>
-                                <input type="text" name="relation" class="form-control" placeholder="เช่น ปู่, ย่า, น้า">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">เบอร์โทรศัพท์ฉุกเฉิน</label>
-                                <input type="tel" name="emergencyTel" class="form-control" required>
-                            </div>
-                        </div>
-
-                        <div class="mt-5">
-                            <button type="submit" id="submitBtn" class="btn btn-primary btn-submit w-100">
-                                <i class="fas fa-save me-2"></i> บันทึกข้อมูลลงฐานข้อมูล
-                            </button>
-                        </div>
-                    </form>
+                <div class="section-title">2. ข้อมูลที่อยู่</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">จังหวัด</label>
+                        <select id="province" name="province" class="form-select" required onchange="updateAmphoe()"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">อำเภอ/เขต</label>
+                        <select id="amphoe" name="amphoe" class="form-select" required onchange="updateTambon()"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ตำบล/แขวง</label>
+                        <select id="tambon" name="tambon" class="form-select" required></select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">รายละเอียด (บ้านเลขที่/หมู่/ซอย)</label>
+                        <input type="text" name="addressDetail" class="form-control">
+                    </div>
                 </div>
-            </div>
+
+                <div class="section-title">3. ติดต่อฉุกเฉิน</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อผู้ปกครอง</label>
+                        <input type="text" name="parentName" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">เบอร์โทรศัพท์</label>
+                        <input type="tel" name="emergencyTel" class="form-control" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-success w-100 mt-5 p-3 fw-bold">
+                    <i class="fas fa-save"></i> บันทึกข้อมูล
+                </button>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
-    // ⚠️ ใส่ Web App URL ของคุณที่นี่
     const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ของคุณตรงนี้';
-    
     let addressData = [];
 
-    // 1. โหลดข้อมูลที่อยู่ (ใช้ API ล่าสุด)
-    // ผมถอด mode: 'no-cors' ออกเพื่อให้ดึงข้อมูลมาอ่านได้ปกติ
+    // โหลดข้อมูลจังหวัด
     fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json')
-        .then(res => {
-            if (!res.ok) throw new Error('เชื่อมต่อ API ไม่ได้');
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
             addressData = data;
             const provSelect = document.getElementById('province');
-            // เรียง ก-ฮ
-            data.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
+            provSelect.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
+            data.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(p => provSelect.add(new Option(p.name_th, p.name_th)));
-            console.log("✅ โหลดข้อมูลที่อยู่สำเร็จ (จำนวน " + data.length + " จังหวัด)");
-        })
-        .catch(err => {
-            console.error(err);
-            alert("⚠️ โหลดข้อมูลที่อยู่ไม่สำเร็จ! กรุณาเช็คอินเทอร์เน็ตหรือรีเฟรชหน้าจอ");
         });
 
-    // 2. ฟังก์ชันอัปเดตอำเภอ (ฉลาดขึ้น: เช็คทั้ง district และ amphure)
     function updateAmphoe() {
         const provName = document.getElementById('province').value;
         const ampSelect = document.getElementById('amphoe');
         const tamSelect = document.getElementById('tambon');
         
-        ampSelect.innerHTML = '<option value="">-- กำลังโหลดอำเภอ... --</option>';
+        ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
-        
         if (prov) {
-            // ดึงข้อมูลอำเภอ (เช็คทั้งชื่อ district และ amphure)
+            // ระบบเช็ค Key อัตโนมัติ (district หรือ amphure)
             const districts = prov.district || prov.amphure || [];
-            
-            ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
-            districts.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
+            districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
-            
-            console.log("📍 โหลดอำเภอของ " + provName + " สำเร็จ");
         }
     }
 
-    // 3. ฟังก์ชันอัปเดตตำบล (ฉลาดขึ้น: เช็คทั้ง sub_district และ tambon)
     function updateTambon() {
         const provName = document.getElementById('province').value;
         const ampName = document.getElementById('amphoe').value;
         const tamSelect = document.getElementById('tambon');
-        
-        tamSelect.innerHTML = '<option value="">-- กำลังโหลดตำบล... --</option>';
+        tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
         const districts = prov?.district || prov?.amphure || [];
         const amp = districts.find(d => d.name_th === ampName);
         
         if (amp) {
-            // ดึงข้อมูลตำบล (เช็คทั้งชื่อ sub_district และ tambon)
+            // ระบบเช็ค Key อัตโนมัติ (sub_district หรือ tambon)
             const tambons = amp.sub_district || amp.tambon || [];
-            
-            tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
-            tambons.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'))
-                .forEach(s => tamSelect.add(new Option(s.name_th, s.name_th)));
-                
-            console.log("📍 โหลดตำบลของ " + ampName + " สำเร็จ");
+            tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
+                .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
         }
     }
 
-    // 4. บันทึกข้อมูล
     const form = document.getElementById('childForm');
-    const overlay = document.getElementById('loadingOverlay');
-
     form.addEventListener('submit', e => {
         e.preventDefault();
-        overlay.style.display = 'flex';
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        fetch(scriptURL, { 
-            method: 'POST', 
-            // ใช้ mode: 'no-cors' เฉพาะตอนส่งไป Google Sheets เพื่อเลี่ยงปัญหา CORS
-            mode: 'no-cors', 
-            body: JSON.stringify(data)
-        })
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(Object.fromEntries(new FormData(form).entries()))})
         .then(() => {
-            overlay.style.display = 'none';
-            alert('✅ บันทึกข้อมูลของ ศพด.ทับกวาง เรียบร้อยแล้ว!');
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert('บันทึกสำเร็จ!');
             form.reset();
         })
-        .catch(err => {
-            overlay.style.display = 'none';
-            console.error(err);
-            alert('⚠️ เกิดข้อผิดพลาด แต่ข้อมูลอาจจะเข้าแล้ว กรุณาเช็คใน Google Sheets ครับ');
+        .catch(() => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert('เกิดข้อผิดพลาด!');
         });
     });
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
