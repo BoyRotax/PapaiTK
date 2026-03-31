@@ -19,7 +19,40 @@
     </style>
 </head>
 <body>
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'index.html'; // เตะกลับไปหน้า Login
+    }
+    function logout() {
+        sessionStorage.removeItem('isLoggedIn'); // ลบสถานะ
+        window.location.href = 'index.html'; // กลับไปหน้า Login
+    }
+</script>
 
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-warning" href="dashboard.html"><i class="fas fa-school"></i> ศพด.ทับกวาง</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="regdata.html"><i class="fas fa-user-plus"></i> เพิ่มนักเรียน</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="admin.html"><i class="fas fa-user-tie"></i> เพิ่มบุคลากร</a>
+                </li>
+            </ul>
+            <button class="btn btn-danger btn-sm rounded-pill px-3" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+            </button>
+        </div>
+    </div>
+</nav>
 <div id="loadingOverlay" class="loading-overlay">
     <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
     <h4 class="mt-3 text-primary fw-bold">กำลังดึงข้อมูลจากระบบ...</h4>
