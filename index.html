@@ -34,24 +34,31 @@
                 
                 <div class="section-title">1. ข้อมูลพื้นฐาน</div>
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">ระดับชั้น</label>
                         <select id="classLevel" name="classLevel" class="form-select" required onchange="generateStudentId()">
                             <option value="" data-code="">-- เลือก --</option>
-                            <option value="เตรียมอนุบาล" data-code="00">เตรียมอนุบาล</option>
-                            <option value="อนุบาล ๑" data-code="01">อนุบาล ๑</option>
-                            <option value="อนุบาล ๒/๑" data-code="02">อนุบาล ๒/๑</option>
-                            <option value="อนุบาล ๒/๒" data-code="03">อนุบาล ๒/๒</option>
-                            <option value="อนุบาล ๓" data-code="04">อนุบาล ๓</option>
+                            <option value="เตรียมอนุบาล" data-code="0">เตรียมอนุบาล</option>
+                            <option value="อนุบาล ๑" data-code="1">อนุบาล ๑</option>
+                            <option value="อนุบาล ๒" data-code="2">อนุบาล ๒</option>
+                            <option value="อนุบาล ๓" data-code="3">อนุบาล ๓</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">ลำดับที่เข้า</label>
+                        <label class="form-label">ห้อง</label>
+                        <select id="roomLevel" name="room" class="form-select" required onchange="generateStudentId()">
+                            <option value="1">๑</option>
+                            <option value="2">๒</option>
+                            <option value="3">๓</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">ลำดับที่</label>
                         <input type="text" id="runningNumber" class="form-control" placeholder="เช่น 1 หรือ 01" maxlength="2" oninput="generateStudentId()" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">รหัสประจำตัว</label>
-                        <input type="text" name="studentId" id="studentId" class="form-control bg-light" placeholder="รหัสสร้างอัตโนมัติ" readonly required>
+                        <input type="text" name="studentId" id="studentId" class="form-control bg-light" placeholder="อัตโนมัติ" readonly required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">ชื่อ-นามสกุล</label>
@@ -145,21 +152,15 @@
     const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ของคุณตรงนี้';
     let addressData = [];
 
-    // -------------------------------------------------------------------
-    // 1. ระบบวันเดือนปีเกิด (พ.ศ.)
-    // -------------------------------------------------------------------
+    // 1. ระบบวันเดือนปีเกิด
     const bDay = document.getElementById('bDay');
     const bMonth = document.getElementById('bMonth');
     const bYear = document.getElementById('bYear');
 
-    // สร้างตัวเลือก วันที่ (1-31)
     bDay.innerHTML = '<option value="">วัน</option>' + Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('');
-    
-    // สร้างตัวเลือก เดือน (ภาษาไทย)
     const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     bMonth.innerHTML = '<option value="">เดือน</option>' + thaiMonths.map(m => `<option value="${m}">${m}</option>`).join('');
     
-    // สร้างตัวเลือก ปี พ.ศ. (ย้อนหลัง 15 ปีจากปีปัจจุบัน)
     const currentYearBE = new Date().getFullYear() + 543;
     let yearOptions = '<option value="">ปี พ.ศ.</option>';
     for (let i = currentYearBE; i >= currentYearBE - 15; i--) {
@@ -167,34 +168,27 @@
     }
     bYear.innerHTML = yearOptions;
 
-    // -------------------------------------------------------------------
-    // 2. ระบบสร้างรหัสประจำตัวนักเรียน
-    // -------------------------------------------------------------------
+    // 2. ระบบสร้างรหัสประจำตัวนักเรียน (รูปแบบใหม่ 6 หลัก: ปี2 + ชั้น1 + ห้อง1 + ลำดับ2)
     function generateStudentId() {
         const classSelect = document.getElementById('classLevel');
+        const roomSelect = document.getElementById('roomLevel');
         const runningNo = document.getElementById('runningNumber').value;
         const studentIdField = document.getElementById('studentId');
         
-        // ก. ปีที่เข้า: ดึง 2 ตัวท้ายของปี พ.ศ. ปัจจุบัน (เช่น 2569 ได้ 69)
         const yearCode = currentYearBE.toString().slice(-2); 
-        
-        // ข. รหัสระดับชั้น
         const selectedOption = classSelect.options[classSelect.selectedIndex];
         const classCode = selectedOption.getAttribute('data-code');
+        const roomCode = roomSelect.value;
         
-        // ค. สร้างรหัสถ้าระบุชั้นเรียนและลำดับแล้ว
-        if (classCode && runningNo) {
-            // padStart(2, '0') จะทำให้ถ้าพิมพ์ '1' มันจะกลายเป็น '01'
+        if (classCode && roomCode && runningNo) {
             const formattedRunningNo = runningNo.replace(/\D/g,'').padStart(2, '0'); 
-            studentIdField.value = `${yearCode}${classCode}${formattedRunningNo}`;
+            studentIdField.value = `${yearCode}${classCode}${roomCode}${formattedRunningNo}`;
         } else {
             studentIdField.value = '';
         }
     }
 
-    // -------------------------------------------------------------------
-    // 3. ระบบที่อยู่ (อัปเดตใหม่รองรับ API ล่าสุด)
-    // -------------------------------------------------------------------
+    // 3. ระบบที่อยู่
     fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json')
         .then(res => res.json())
         .then(data => {
@@ -238,16 +232,11 @@
         }
     }
 
-    // -------------------------------------------------------------------
-    // 4. ระบบการส่งข้อมูลไป Google Sheets
-    // -------------------------------------------------------------------
+    // 4. การส่งข้อมูลไป Google Sheets
     const form = document.getElementById('childForm');
     form.addEventListener('submit', e => {
         e.preventDefault();
-        
-        // รวมค่า วัน/เดือน/ปี พ.ศ. ไปใส่ใน Input ซ่อน (birthDate) ก่อนส่ง
         document.getElementById('birthDate').value = `${bDay.value} ${bMonth.value} ${bYear.value}`;
-
         document.getElementById('loadingOverlay').style.display = 'flex';
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(Object.fromEntries(new FormData(form).entries()))})
         .then(() => {
