@@ -135,8 +135,8 @@
         
         const prov = addressData.find(p => p.name_th === provName);
         if (prov) {
-            // ระบบเช็ค Key อัตโนมัติ (district หรือ amphure)
-            const districts = prov.district || prov.amphure || [];
+            // เพิ่มการรองรับ Key 'districts' เพื่อให้ตรงกับ API เวอร์ชันใหม่
+            const districts = prov.districts || prov.district || prov.amphures || prov.amphure || [];
             districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
         }
@@ -149,12 +149,13 @@
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
-        const districts = prov?.district || prov?.amphure || [];
+        // เพิ่มการรองรับ Key ดึงข้อมูลอำเภอ
+        const districts = prov?.districts || prov?.district || prov?.amphures || prov?.amphure || [];
         const amp = districts.find(d => d.name_th === ampName);
         
         if (amp) {
-            // ระบบเช็ค Key อัตโนมัติ (sub_district หรือ tambon)
-            const tambons = amp.sub_district || amp.tambon || [];
+            // เพิ่มการรองรับ Key 'sub_districts' เพื่อให้ตรงกับ API เวอร์ชันใหม่
+            const tambons = amp.sub_districts || amp.sub_district || amp.tambons || amp.tambon || [];
             tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
         }
