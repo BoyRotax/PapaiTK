@@ -32,29 +32,56 @@
                     <label class="form-label text-muted fw-bold"><i class="fas fa-lock"></i> รหัสผ่าน (Password)</label>
                     <input type="password" id="password" class="form-control form-control-lg" required>
                 </div>
-                <div id="errorMsg" class="alert alert-danger d-none py-2 text-center"><small>ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!</small></div>
                 
-                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">เข้าสู่ระบบ</button>
+                <div id="errorMsg" class="alert alert-danger d-none py-2 text-center"><small><i class="fas fa-exclamation-circle"></i> ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!</small></div>
+                
+                <button type="submit" id="loginBtn" class="btn btn-primary btn-lg w-100 fw-bold">เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
 </div>
 
 <script>
+    // ⚠️ ใส่ URL Web App อันล่าสุดของคุณตรงนี้ ⚠️
+    const scriptURL = 'ใส่_URL_WEB_APP_ของคุณตรงนี้';
+
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const user = document.getElementById('username').value;
-        const pass = document.getElementById('password').value;
+        
+        const user = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value.trim();
+        const btn = document.getElementById('loginBtn');
+        const errorMsg = document.getElementById('errorMsg');
 
-        // กำหนด Username และ Password ตรงนี้ครับ
-        if (user === 'admin' && pass === '1234') {
-            // บันทึกสถานะการล็อคอินไว้ใน Browser
-            sessionStorage.setItem('isLoggedIn', 'true');
-            // ล็อคอินผ่านให้เด้งไปหน้า Dashboard
-            window.location.href = 'dashboard.html'; 
-        } else {
-            document.getElementById('errorMsg').classList.remove('d-none');
-        }
+        // เปลี่ยนหน้าตาปุ่มตอนกำลังโหลด
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบ...';
+        btn.disabled = true;
+        errorMsg.classList.add('d-none');
+
+        // สร้าง URL สำหรับเช็ค Login
+        const loginURL = `${scriptURL}?action=login&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`;
+
+        // ยิงข้อมูลไปถาม Google Apps Script
+        fetch(loginURL)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success === true) {
+                    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    window.location.href = 'dashboard.html'; 
+                } else {
+                    // ถ้ารหัสผิด แสดงข้อความเตือน
+                    errorMsg.classList.remove('d-none');
+                    btn.innerHTML = 'เข้าสู่ระบบ';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+                btn.innerHTML = 'เข้าสู่ระบบ';
+                btn.disabled = false;
+            });
     });
 </script>
 </body>
