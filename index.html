@@ -173,15 +173,29 @@
     // ดึงข้อมูลที่อยู่จากแหล่งข้อมูลฟรี
 let addressData = [];
 
+// ใช้ API สำรองที่เสถียรกว่า หรือตรวจสอบโครงสร้างใหม่
 fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
     .then(data => {
         addressData = data;
         const provinceSelect = document.getElementById('province');
+        
+        // เรียงชื่อจังหวัดตามตัวอักษร
+        data.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'));
+
         data.forEach(p => {
             let option = new Option(p.name_th, p.name_th);
             provinceSelect.add(option);
         });
+        
+        console.log("โหลดข้อมูลที่อยู่สำเร็จ");
+    })
+    .catch(error => {
+        console.error('Error loading address:', error);
+        alert('ไม่สามารถโหลดข้อมูล จังหวัด/อำเภอ ได้ กรุณารีเฟรชหน้าจอ');
     });
 
 function updateAmphoe() {
@@ -192,8 +206,13 @@ function updateAmphoe() {
     amphoeSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
     tambonSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
     
+    // หาจังหวัดที่เลือก
     const province = addressData.find(p => p.name_th === provinceName);
-    if (province) {
+    
+    if (province && province.amphure) {
+        // เรียงชื่ออำเภอ
+        province.amphure.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'));
+        
         province.amphure.forEach(a => {
             let option = new Option(a.name_th, a.name_th);
             amphoeSelect.add(option);
@@ -211,7 +230,10 @@ function updateTambon() {
     const province = addressData.find(p => p.name_th === provinceName);
     const amphoe = province?.amphure.find(a => a.name_th === amphoeName);
     
-    if (amphoe) {
+    if (amphoe && amphoe.tambon) {
+        // เรียงชื่อตำบล
+        amphoe.tambon.sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'));
+        
         amphoe.tambon.forEach(t => {
             let option = new Option(t.name_th, t.name_th);
             tambonSelect.add(option);
