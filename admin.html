@@ -10,7 +10,6 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; padding-top: 20px; }
         .main-card { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; }
-        /* เปลี่ยนสี Header สำหรับหน้า Admin เพื่อให้รู้ว่าอยู่คนละหน้า */
         .header-banner { background: #343a40; color: white; padding: 30px; text-align: center; border-radius: 20px 20px 0 0; }
         .section-title { background: #f8f9fa; border-left: 5px solid #28a745; padding: 10px; margin: 25px 0 15px 0; font-weight: 600; }
         .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
@@ -55,7 +54,7 @@
                         <input type="tel" name="teacherTel" class="form-control" required>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">ตำแหน่ง</label>
                         <select name="position" class="form-select" required>
                             <option value="">-- เลือกตำแหน่ง --</option>
@@ -65,21 +64,29 @@
                             <option value="เจ้าหน้าที่ธุรการ">เจ้าหน้าที่ธุรการ</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">รับผิดชอบชั้นเรียน (ถ้ามี)</label>
+                    <div class="col-md-4">
+                        <label class="form-label">ระดับชั้นที่รับผิดชอบ</label>
                         <select name="assignedClass" class="form-select">
                             <option value="-">-- ไม่ระบุ / ไม่ได้เป็นครูประจำชั้น --</option>
                             <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
                             <option value="อนุบาล ๑">อนุบาล ๑</option>
-                            <option value="อนุบาล ๒/๑">อนุบาล ๒/๑</option>
-                            <option value="อนุบาล ๒/๒">อนุบาล ๒/๒</option>
+                            <option value="อนุบาล ๒">อนุบาล ๒</option>
                             <option value="อนุบาล ๓">อนุบาล ๓</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">ห้องที่รับผิดชอบ</label>
+                        <select name="assignedRoom" class="form-select">
+                            <option value="-">-- ไม่ระบุ --</option>
+                            <option value="1">๑</option>
+                            <option value="2">๒</option>
+                            <option value="3">๓</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="alert alert-info mt-4">
-                    <i class="fas fa-info-circle"></i> <strong>คำแนะนำ:</strong> เมื่อบันทึกข้อมูลแล้ว ข้อมูลจะถูกส่งไปยัง Google Sheets (แนะนำให้สร้าง Sheet ใหม่ชื่อ "Teacher" ไว้รองรับข้อมูลชุดนี้)
+                    <i class="fas fa-info-circle"></i> <strong>คำแนะนำ:</strong> ข้อมูลจะถูกบันทึกโดยมีฟิลด์แยกกันระหว่าง "ระดับชั้น" และ "ห้อง" เพื่อให้ง่ายต่อการนำไปจัดกลุ่มใน Dashboard
                 </div>
 
                 <button type="submit" class="btn btn-dark w-100 mt-3 p-3 fw-bold">
@@ -91,7 +98,6 @@
 </div>
 
 <script>
-    // ใช้ URL เดิมจาก Google Apps Script ได้เลย (แต่ต้องไปปรับโค้ดฝั่งนั้นให้เช็คค่า formType)
     const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ของคุณตรงนี้';
 
     const form = document.getElementById('teacherForm');
