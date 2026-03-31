@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกข้อมูลเด็ก - ศพด.ทับกวาง (ป่าไผ่)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
+        .form-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 30px; margin-bottom: 50px; }
+        .section-title { border-left: 5px solid #007bff; padding-left: 10px; margin-bottom: 20px; color: #007bff; font-weight: 600; }
+        .btn-submit { width: 100%; padding: 12px; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10 form-container">
+            <h2 class="text-center mb-4">📝 ระบบบันทึกข้อมูลเด็กนักเรียน</h2>
+            <p class="text-center text-muted">ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง (ป่าไผ่)</p>
+            <hr>
+
+            <form id="childForm">
+                <div class="section-title">1. ข้อมูลพื้นฐานเด็ก</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">รหัสประจำตัว</label>
+                        <input type="text" name="studentId" class="form-control" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">ชื่อ-นามสกุล</label>
+                        <input type="text" name="fullName" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">ชื่อเล่น</label>
+                        <input type="text" name="nickName" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">เพศ</label>
+                        <select name="gender" class="form-select">
+                            <option value="ชาย">ชาย</option>
+                            <option value="หญิง">หญิง</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">วัน/เดือน/ปีเกิด</label>
+                        <input type="date" name="birthDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">กรุ๊ปเลือด</label>
+                        <select name="bloodType" class="form-select">
+                            <option value="-">- ไม่ทราบ -</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="AB">AB</option>
+                            <option value="O">O</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section-title">2. ข้อมูลสุขภาพ</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">น้ำหนัก (กก.)</label>
+                        <input type="number" step="0.1" name="weight" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ส่วนสูง (ซม.)</label>
+                        <input type="number" step="0.1" name="height" class="form-control">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">โรคประจำตัว</label>
+                        <input type="text" name="disease" class="form-control" placeholder="ถ้าไม่มีให้แดช (-)">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ประวัติการแพ้อาหาร</label>
+                        <textarea name="foodAllergy" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ประวัติการแพ้ยา</label>
+                        <textarea name="drugAllergy" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="section-title">3. ข้อมูลครอบครัวและติดต่อฉุกเฉิน</div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อ-นามสกุล พ่อ</label>
+                        <input type="text" name="fatherName" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อ-นามสกุล แม่</label>
+                        <input type="text" name="motherName" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อผู้ปกครอง (ที่ติดต่อได้หลัก)</label>
+                        <input type="text" name="parentName" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">ความสัมพันธ์</label>
+                        <input type="text" name="relation" class="form-control" placeholder="เช่น ป้า, ยาย">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">เบอร์โทรศัพท์ฉุกเฉิน</label>
+                        <input type="tel" name="emergencyTel" class="form-control" required>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">ที่อยู่ปัจจุบัน</label>
+                        <textarea name="address" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-submit">บันทึกข้อมูลลงระบบ</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // แทนที่ URL นี้ด้วย Web App URL ที่ได้จาก Google Apps Script (ขั้นตอนก่อนหน้า)
+    const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ตรงนี้';
+    const form = document.getElementById('childForm');
+    const btn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.innerText = 'กำลังบันทึกข้อมูล...';
+
+        // แปลงข้อมูลจาก Form เป็น JSON object
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // ส่งข้อมูลไปที่ Google Sheets
+        fetch(scriptURL, { 
+            method: 'POST', 
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            alert('บันทึกข้อมูลสำเร็จแล้ว!');
+            form.reset();
+            btn.disabled = false;
+            btn.innerText = 'บันทึกข้อมูลลงระบบ';
+        })
+        .catch(error => {
+            console.error('Error!', error.message);
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            btn.disabled = false;
+            btn.innerText = 'บันทึกข้อมูลลงระบบ';
+        });
+    });
+</script>
+
+</body>
+</html>
