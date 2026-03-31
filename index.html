@@ -31,40 +31,51 @@
         </div>
         <div class="card-body p-4">
             <form id="childForm">
+                
                 <div class="section-title">1. ข้อมูลพื้นฐาน</div>
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">ระดับชั้น</label>
-                        <select name="classLevel" class="form-select" required>
-                            <option value="">-- เลือก --</option>
-                            <option>เตรียมอนุบาล</option>
-                            <option>อนุบาล ๑</option>
-                            <option>อนุบาล ๒/๑</option>
-                            <option>อนุบาล ๒/๒</option>
-                            <option>อนุบาล ๓</option>
+                        <select id="classLevel" name="classLevel" class="form-select" required onchange="generateStudentId()">
+                            <option value="" data-code="">-- เลือก --</option>
+                            <option value="เตรียมอนุบาล" data-code="00">เตรียมอนุบาล</option>
+                            <option value="อนุบาล ๑" data-code="01">อนุบาล ๑</option>
+                            <option value="อนุบาล ๒/๑" data-code="02">อนุบาล ๒/๑</option>
+                            <option value="อนุบาล ๒/๒" data-code="03">อนุบาล ๒/๒</option>
+                            <option value="อนุบาล ๓" data-code="04">อนุบาล ๓</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
+                        <label class="form-label">ลำดับที่เข้า</label>
+                        <input type="text" id="runningNumber" class="form-control" placeholder="เช่น 1 หรือ 01" maxlength="2" oninput="generateStudentId()" required>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">รหัสประจำตัว</label>
-                        <input type="text" name="studentId" class="form-control" required>
+                        <input type="text" name="studentId" id="studentId" class="form-control bg-light" placeholder="รหัสสร้างอัตโนมัติ" readonly required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">ชื่อ-นามสกุล</label>
                         <input type="text" name="fullName" class="form-control" required>
                     </div>
+
                     <div class="col-md-3">
                         <label class="form-label">ชื่อเล่น</label>
                         <input type="text" name="nickName" class="form-control">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">วันเกิด</label>
-                        <input type="date" name="birthDate" class="form-control">
+                    <div class="col-md-5">
+                        <label class="form-label">วันเกิด (พ.ศ.)</label>
+                        <div class="input-group">
+                            <select id="bDay" class="form-select" required></select>
+                            <select id="bMonth" class="form-select" required></select>
+                            <select id="bYear" class="form-select" required></select>
+                        </div>
+                        <input type="hidden" name="birthDate" id="birthDate">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">เพศ</label>
                         <select name="gender" class="form-select"><option>ชาย</option><option>หญิง</option></select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">กรุ๊ปเลือด</label>
                         <select name="bloodType" class="form-select"><option>-</option><option>A</option><option>B</option><option>AB</option><option>O</option></select>
                     </div>
@@ -90,14 +101,34 @@
                     </div>
                 </div>
 
-                <div class="section-title">3. ติดต่อฉุกเฉิน</div>
+                <div class="section-title">3. ข้อมูลบิดา-มารดา</div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">ชื่อผู้ปกครอง</label>
+                        <label class="form-label">ชื่อ-สกุล บิดา</label>
+                        <input type="text" name="fatherName" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">เบอร์โทรศัพท์ บิดา</label>
+                        <input type="tel" name="fatherTel" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อ-สกุล มารดา</label>
+                        <input type="text" name="motherName" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">เบอร์โทรศัพท์ มารดา</label>
+                        <input type="tel" name="motherTel" class="form-control">
+                    </div>
+                </div>
+
+                <div class="section-title">4. ติดต่อฉุกเฉิน (ผู้ปกครอง)</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อผู้ติดต่อฉุกเฉิน</label>
                         <input type="text" name="parentName" class="form-control" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">เบอร์โทรศัพท์</label>
+                        <label class="form-label">เบอร์โทรศัพท์ฉุกเฉิน</label>
                         <input type="tel" name="emergencyTel" class="form-control" required>
                     </div>
                 </div>
@@ -114,7 +145,56 @@
     const scriptURL = 'ใส่_URL_ที่ได้จาก_Google_Apps_Script_ของคุณตรงนี้';
     let addressData = [];
 
-    // โหลดข้อมูลจังหวัด
+    // -------------------------------------------------------------------
+    // 1. ระบบวันเดือนปีเกิด (พ.ศ.)
+    // -------------------------------------------------------------------
+    const bDay = document.getElementById('bDay');
+    const bMonth = document.getElementById('bMonth');
+    const bYear = document.getElementById('bYear');
+
+    // สร้างตัวเลือก วันที่ (1-31)
+    bDay.innerHTML = '<option value="">วัน</option>' + Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('');
+    
+    // สร้างตัวเลือก เดือน (ภาษาไทย)
+    const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    bMonth.innerHTML = '<option value="">เดือน</option>' + thaiMonths.map(m => `<option value="${m}">${m}</option>`).join('');
+    
+    // สร้างตัวเลือก ปี พ.ศ. (ย้อนหลัง 15 ปีจากปีปัจจุบัน)
+    const currentYearBE = new Date().getFullYear() + 543;
+    let yearOptions = '<option value="">ปี พ.ศ.</option>';
+    for (let i = currentYearBE; i >= currentYearBE - 15; i--) {
+        yearOptions += `<option value="${i}">${i}</option>`;
+    }
+    bYear.innerHTML = yearOptions;
+
+    // -------------------------------------------------------------------
+    // 2. ระบบสร้างรหัสประจำตัวนักเรียน
+    // -------------------------------------------------------------------
+    function generateStudentId() {
+        const classSelect = document.getElementById('classLevel');
+        const runningNo = document.getElementById('runningNumber').value;
+        const studentIdField = document.getElementById('studentId');
+        
+        // ก. ปีที่เข้า: ดึง 2 ตัวท้ายของปี พ.ศ. ปัจจุบัน (เช่น 2569 ได้ 69)
+        const yearCode = currentYearBE.toString().slice(-2); 
+        
+        // ข. รหัสระดับชั้น
+        const selectedOption = classSelect.options[classSelect.selectedIndex];
+        const classCode = selectedOption.getAttribute('data-code');
+        
+        // ค. สร้างรหัสถ้าระบุชั้นเรียนและลำดับแล้ว
+        if (classCode && runningNo) {
+            // padStart(2, '0') จะทำให้ถ้าพิมพ์ '1' มันจะกลายเป็น '01'
+            const formattedRunningNo = runningNo.replace(/\D/g,'').padStart(2, '0'); 
+            studentIdField.value = `${yearCode}${classCode}${formattedRunningNo}`;
+        } else {
+            studentIdField.value = '';
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // 3. ระบบที่อยู่ (อัปเดตใหม่รองรับ API ล่าสุด)
+    // -------------------------------------------------------------------
     fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json')
         .then(res => res.json())
         .then(data => {
@@ -135,7 +215,6 @@
         
         const prov = addressData.find(p => p.name_th === provName);
         if (prov) {
-            // เพิ่มการรองรับ Key 'districts' เพื่อให้ตรงกับ API เวอร์ชันใหม่
             const districts = prov.districts || prov.district || prov.amphures || prov.amphure || [];
             districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
@@ -149,21 +228,26 @@
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         const prov = addressData.find(p => p.name_th === provName);
-        // เพิ่มการรองรับ Key ดึงข้อมูลอำเภอ
         const districts = prov?.districts || prov?.district || prov?.amphures || prov?.amphure || [];
         const amp = districts.find(d => d.name_th === ampName);
         
         if (amp) {
-            // เพิ่มการรองรับ Key 'sub_districts' เพื่อให้ตรงกับ API เวอร์ชันใหม่
             const tambons = amp.sub_districts || amp.sub_district || amp.tambons || amp.tambon || [];
             tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                 .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
         }
     }
 
+    // -------------------------------------------------------------------
+    // 4. ระบบการส่งข้อมูลไป Google Sheets
+    // -------------------------------------------------------------------
     const form = document.getElementById('childForm');
     form.addEventListener('submit', e => {
         e.preventDefault();
+        
+        // รวมค่า วัน/เดือน/ปี พ.ศ. ไปใส่ใน Input ซ่อน (birthDate) ก่อนส่ง
+        document.getElementById('birthDate').value = `${bDay.value} ${bMonth.value} ${bYear.value}`;
+
         document.getElementById('loadingOverlay').style.display = 'flex';
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(Object.fromEntries(new FormData(form).entries()))})
         .then(() => {
