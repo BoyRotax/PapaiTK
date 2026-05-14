@@ -43,7 +43,7 @@
 
 <script>
     // ⚠️ ใส่ URL Web App อันล่าสุดของคุณตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwor6FeIFLccMvMZCAS0a71jYlvkc3yGE5Z9DnJ7EfyKrz34ZeNszMj2l5rhxHuaylg/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxdPp4BId7QeUlfe8_Kq6ZWKycu4dPSIeMLJYK84zgM_aiLafIUqNsWyp88mKuQ4SvG/exec';
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -65,10 +65,15 @@
         fetch(loginURL)
             .then(response => response.json())
             .then(data => {
-                if (data.success === true) {
-                    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                    window.location.href = 'dashboard.html'; 
+                if (data.status === 'success') {
+    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
+    sessionStorage.setItem('isLoggedIn', 'true');
+    
+    // (แนะนำ) เก็บชื่อผู้ใช้ไว้โชว์ในหน้า Dashboard ด้วย
+    if (data.name) sessionStorage.setItem('userName', data.name);
+    if (data.role) sessionStorage.setItem('userRole', data.role);
+    
+    window.location.href = 'dashboard.html';  
                 } else {
                     // ถ้ารหัสผิด แสดงข้อความเตือน
                     errorMsg.classList.remove('d-none');
