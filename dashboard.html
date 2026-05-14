@@ -2,274 +2,139 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - ศพด.ทับกวาง (ป่าไผ่)</title>
+    <title>Dashboard - ข้อมูลนักเรียน</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; padding-top: 20px; }
-        .dashboard-header { background: linear-gradient(135deg, #6f42c1, #007bff); color: white; padding: 30px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .stat-card { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .icon-box { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; margin-bottom: 15px; }
-        .table-custom { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .table-custom thead { background-color: #f8f9fa; }
-        .loading-overlay { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
+        .sidebar { height: 100vh; background: #343a40; color: white; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 10px 20px; display: block; }
+        .sidebar a:hover { color: white; background: #495057; }
     </style>
 </head>
 <body>
-<script>
-    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-        window.location.href = 'index.html'; // เตะกลับไปหน้า Login
-    }
-    function logout() {
-        sessionStorage.removeItem('isLoggedIn'); // ลบสถานะ
-        window.location.href = 'index.html'; // กลับไปหน้า Login
-    }
-</script>
+    <!-- Check Login Status -->
+    <script>
+        if(!localStorage.getItem('user')) { window.location.href = 'index.html'; }
+    </script>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-warning" href="dashboard.html"><i class="fas fa-school"></i> ศพด.ทับกวาง</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="regdata.html"><i class="fas fa-user-plus"></i> เพิ่มนักเรียน</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="admin.html"><i class="fas fa-user-tie"></i> เพิ่มบุคลากร</a>
-                </li>
-            </ul>
-            <button class="btn btn-danger btn-sm rounded-pill px-3" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
-            </button>
-        </div>
-    </div>
-</nav>
-<div id="loadingOverlay" class="loading-overlay">
-    <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-    <h4 class="mt-3 text-primary fw-bold">กำลังดึงข้อมูลจากระบบ...</h4>
-    <p class="text-muted">อาจใช้เวลาสักครู่</p>
-</div>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar">
+                <h4 class="text-center mb-4">ศูนย์พัฒนาเด็กเล็ก<br>ทับกวาง (ป่าไผ่)</h4>
+                <a href="dashboard.html" class="text-white fw-bold">📊 Dashboard</a>
+                <a href="regdata.html">📝 เพิ่ม/แก้ไขข้อมูลนักเรียน</a>
+                <a href="#" onclick="logout()" class="text-danger mt-5">🚪 ออกจากระบบ</a>
+            </div>
 
-<div class="container mb-5">
-    
-    <div class="dashboard-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="fw-bold"><i class="fas fa-chart-line me-2"></i> ระบบจัดการข้อมูลนักเรียน</h2>
-            <p>ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง (ป่าไผ่)</p>
-        </div>
-        <div>
-            <button class="btn btn-light rounded-pill px-4" onclick="loadData()">
-                <i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล
-            </button>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted">ระดับชั้น</label>
-                    <select id="filterClass" class="form-select form-select-lg" onchange="updateDashboard()">
-                        <option value="all">-- ดูทั้งหมด --</option>
-                        <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                        <option value="อนุบาล ๑">อนุบาล ๑</option>
-                        <option value="อนุบาล ๒">อนุบาล ๒</option>
-                        <option value="อนุบาล ๓">อนุบาล ๓</option>
-                    </select>
+            <!-- Main Content -->
+            <div class="col-md-10 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Dashboard สรุปข้อมูลนักเรียน</h2>
+                    <span id="userNameDisplay" class="badge bg-primary fs-6"></span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-muted">ห้อง</label>
-                    <select id="filterRoom" class="form-select form-select-lg" onchange="updateDashboard()">
-                        <option value="all">-- ทุกห้อง --</option>
-                        <option value="1">๑</option>
-                        <option value="2">๒</option>
-                        <option value="3">๓</option>
-                    </select>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm"><div class="card-body">
+                            <h5 class="card-title">สัดส่วน ชาย-หญิง</h5>
+                            <canvas id="genderChart" height="200"></canvas>
+                        </div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm"><div class="card-body">
+                            <h5 class="card-title">จำนวนนักเรียนแยกตามชั้น</h5>
+                            <canvas id="classChart" height="200"></canvas>
+                        </div></div>
+                    </div>
                 </div>
-                <div class="col-md-5 text-md-end">
-                    <div class="p-3 bg-light rounded-3 border">
-                        <small class="text-muted d-block mb-1">ครูประจำชั้นที่รับผิดชอบ</small>
-                        <h5 class="fw-bold mb-0 text-primary" id="teacherDisplay"><i class="fas fa-user-circle"></i> เลือกชั้นและห้องเพื่อดูชื่อครู</h5>
+
+                <!-- Data Table -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">รายชื่อนักเรียนทั้งหมด</h5>
+                        <div class="table-responsive">
+                            <table id="studentTable" class="table table-striped w-100">
+                                <thead>
+                                    <tr>
+                                        <th>รหัสนักเรียน</th>
+                                        <th>ชื่อ-สกุล</th>
+                                        <th>ชื่อเล่น</th>
+                                        <th>เพศ</th>
+                                        <th>ชั้นเรียน</th>
+                                        <th>ห้อง</th>
+                                    </tr>
+                                </thead>
+                                <tbody><!-- Data will be loaded here --></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card stat-card h-100 p-3 border-0">
-                <div class="card-body">
-                    <div class="icon-box bg-primary shadow-sm"><i class="fas fa-users"></i></div>
-                    <h6 class="text-muted fw-bold">จำนวนนักเรียนทั้งหมด</h6>
-                    <h2 class="fw-bold mb-0" id="statTotal">0 <span class="fs-6 text-muted fw-normal">คน</span></h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card stat-card h-100 p-3 border-0">
-                <div class="card-body">
-                    <div class="icon-box bg-info shadow-sm"><i class="fas fa-male"></i></div>
-                    <h6 class="text-muted fw-bold">นักเรียนชาย</h6>
-                    <h2 class="fw-bold mb-0" id="statBoy">0 <span class="fs-6 text-muted fw-normal">คน</span></h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card stat-card h-100 p-3 border-0">
-                <div class="card-body">
-                    <div class="icon-box bg-danger shadow-sm"><i class="fas fa-female"></i></div>
-                    <h6 class="text-muted fw-bold">นักเรียนหญิง</h6>
-                    <h2 class="fw-bold mb-0" id="statGirl">0 <span class="fs-6 text-muted fw-normal">คน</span></h2>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
-    <div class="table-custom p-3">
-        <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-            <h5 class="fw-bold mb-0">รายชื่อนักเรียน</h5>
-            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
-                <i class="fas fa-print"></i> พิมพ์ / PDF
-            </button>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th width="5%">ลำดับ</th>
-                        <th width="15%">รหัสประจำตัว</th>
-                        <th width="25%">ชื่อ - นามสกุล</th>
-                        <th width="15%">ชื่อเล่น</th>
-                        <th width="10%">เพศ</th>
-                        <th width="15%">ระดับชั้น/ห้อง</th>
-                        <th width="15%">ข้อมูลผู้ปกครอง</th>
-                    </tr>
-                </thead>
-                <tbody id="studentTableBody">
-                    </tbody>
-            </table>
-        </div>
-        <div id="noDataMessage" class="text-center py-5 d-none">
-            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">ไม่พบข้อมูลนักเรียนในชั้นเรียนที่เลือก</h5>
-        </div>
-    </div>
+    <script>
+        const API_URL = 'ใส่_URL_WEB_APP_ของคุณที่นี่'; // <<--- เปลี่ยนตรงนี้
 
-</div>
+        // แสดงชื่อผู้ใช้
+        const user = JSON.parse(localStorage.getItem('user'));
+        document.getElementById('userNameDisplay').innerText = `ผู้ใช้งาน: ${user.name}`;
 
-<script>
-    // ⚠️ ใส่ URL ที่ได้จากขั้นตอนที่ 1 ลงตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwor6FeIFLccMvMZCAS0a71jYlvkc3yGE5Z9DnJ7EfyKrz34ZeNszMj2l5rhxHuaylg/exec';
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
 
-    // ตัวแปรเก็บข้อมูลทั้งหมด
-    let allStudents = [];
-    let allTeachers = [];
-
-    // ฟังก์ชันโหลดข้อมูลจาก Google Sheets
-    function loadData() {
-        document.getElementById('loadingOverlay').style.display = 'flex';
-        
-        fetch(scriptURL)
-            .then(response => response.json())
+        // ดึงข้อมูลนักเรียน
+        fetch(API_URL + '?action=getStudents')
+            .then(res => res.json())
             .then(data => {
-                allStudents = data.students || [];
-                allTeachers = data.teachers || [];
-                updateDashboard(); // อัปเดตหน้าจอ
-                document.getElementById('loadingOverlay').style.display = 'none';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loadingOverlay').style.display = 'none';
-                alert('ไม่สามารถเชื่อมต่อดึงข้อมูลได้ โปรดตรวจสอบ URL ของ Google Apps Script');
+                // 1. นำข้อมูลใส่ตาราง DataTables
+                $('#studentTable').DataTable({
+                    data: data,
+                    columns: [
+                        { data: 'StudentId' },
+                        { data: 'FullName' },
+                        { data: 'NickName' },
+                        { data: 'Gender' },
+                        { data: 'ClassLevel' },
+                        { data: 'Room' }
+                    ],
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
+                });
+
+                // 2. คำนวณข้อมูลสำหรับกราฟ ชาย-หญิง
+                let male = data.filter(s => s.Gender === 'ชาย').length;
+                let female = data.filter(s => s.Gender === 'หญิง').length;
+                new Chart(document.getElementById('genderChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['ชาย', 'หญิง'],
+                        datasets: [{ data: [male, female], backgroundColor: ['#36a2eb', '#ff6384'] }]
+                    }
+                });
+
+                // 3. คำนวณข้อมูลสำหรับกราฟ ชั้นเรียน
+                let classCounts = {};
+                data.forEach(s => {
+                    classCounts[s.ClassLevel] = (classCounts[s.ClassLevel] || 0) + 1;
+                });
+                new Chart(document.getElementById('classChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(classCounts),
+                        datasets: [{ label: 'จำนวนนักเรียน', data: Object.values(classCounts), backgroundColor: '#4bc0c0' }]
+                    }
+                });
             });
-    }
-
-    // ฟังก์ชันอัปเดตข้อมูลบน Dashboard ตามตัวกรอง
-    function updateDashboard() {
-        const filterClass = document.getElementById('filterClass').value;
-        const filterRoom = document.getElementById('filterRoom').value;
-
-        // 1. กรองข้อมูลนักเรียน
-        let filteredStudents = allStudents;
-        
-        if (filterClass !== 'all') {
-            filteredStudents = filteredStudents.filter(s => s.ClassLevel === filterClass);
-        }
-        if (filterRoom !== 'all') {
-            // เทียบค่า String ให้ชัวร์
-            filteredStudents = filteredStudents.filter(s => String(s.Room) === String(filterRoom));
-        }
-
-        // 2. คำนวณสถิติ
-        let boys = filteredStudents.filter(s => s.Gender === 'ชาย').length;
-        let girls = filteredStudents.filter(s => s.Gender === 'หญิง').length;
-
-        document.getElementById('statTotal').innerHTML = `${filteredStudents.length} <span class="fs-6 text-muted fw-normal">คน</span>`;
-        document.getElementById('statBoy').innerHTML = `${boys} <span class="fs-6 text-muted fw-normal">คน</span>`;
-        document.getElementById('statGirl').innerHTML = `${girls} <span class="fs-6 text-muted fw-normal">คน</span>`;
-
-        // 3. หาชื่อครูประจำชั้น
-        let teacherNameDisplay = '<i class="fas fa-user-circle"></i> ดูภาพรวมทั้งหมด';
-        if (filterClass !== 'all' && filterRoom !== 'all') {
-            const matchedTeacher = allTeachers.find(t => 
-                t.AssignedClass === filterClass && String(t.AssignedRoom) === String(filterRoom) && t.Position === "ครูประจำชั้น"
-            );
-            
-            if (matchedTeacher) {
-                teacherNameDisplay = `<i class="fas fa-chalkboard-teacher"></i> ${matchedTeacher.Title}${matchedTeacher.Name}`;
-            } else {
-                teacherNameDisplay = '<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> ยังไม่ระบุครูประจำชั้น</span>';
-            }
-        }
-        document.getElementById('teacherDisplay').innerHTML = teacherNameDisplay;
-
-        // 4. สร้างแถวในตาราง
-        const tbody = document.getElementById('studentTableBody');
-        const noData = document.getElementById('noDataMessage');
-        tbody.innerHTML = '';
-
-        if (filteredStudents.length === 0) {
-            noData.classList.remove('d-none');
-        } else {
-            noData.classList.add('d-none');
-            
-            filteredStudents.forEach((student, index) => {
-                // จัดการเรื่อง Badge สีของเพศ
-                const genderBadge = student.Gender === 'ชาย' 
-                    ? '<span class="badge bg-info text-dark">ชาย</span>' 
-                    : '<span class="badge bg-danger">หญิง</span>';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="text-center">${index + 1}</td>
-                    <td><span class="text-primary fw-bold">${student.StudentId || '-'}</span></td>
-                    <td class="fw-bold">${student.FullName || '-'}</td>
-                    <td>${student.NickName || '-'}</td>
-                    <td>${genderBadge}</td>
-                    <td>${student.ClassLevel || '-'} / ${student.Room || '-'}</td>
-                    <td>
-                        <small class="d-block text-muted"><i class="fas fa-phone"></i> ${student.EmergencyTel || '-'}</small>
-                        <small class="d-block text-muted">(${student.EmergencyName || '-'})</small>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    }
-
-    // สั่งโหลดข้อมูลทันทีเมื่อเปิดหน้าเว็บ
-    window.onload = loadData;
-
-</script>
+    </script>
 </body>
 </html>
