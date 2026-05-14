@@ -199,7 +199,7 @@
     }
 
     // เพิ่ม Parameter defaultAmphoe เพื่อให้จดจำค่าตอนกด Edit ได้
-    function updateAmphoe(defaultAmphoe = '') {
+function updateAmphoe(defaultAmphoe = '') {
         const provName = document.getElementById('province').value;
         const ampSelect = document.getElementById('amphoe');
         const tamSelect = document.getElementById('tambon');
@@ -207,18 +207,25 @@
         ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
-        const prov = addressData.find(p => p.name_th === provName);
-        if (prov) {
-            const districts = prov.district || prov.amphure || [];
-            districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
-                .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
+        if (provName) {
+            ampSelect.disabled = false; // 🌟 ปลดล็อคกล่องอำเภอ
+            tamSelect.disabled = true;  // ล็อคกล่องตำบลไว้ก่อนรอเลือกอำเภอ
             
-            // ถ้ามีค่าเก่าส่งมา (ตอน Edit) ให้เลือกค่าช้อยส์นั้น
-            if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
+            const prov = addressData.find(p => p.name_th === provName);
+            if (prov) {
+                const districts = prov.district || prov.amphure || [];
+                districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
+                    .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
+                
+                if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
+            }
+        } else {
+            // ถ้าไม่ได้เลือกจังหวัด ให้ล็อคทั้งสองกล่อง
+            ampSelect.disabled = true;
+            tamSelect.disabled = true;
         }
     }
 
-    // เพิ่ม Parameter defaultTambon เพื่อให้จดจำค่าตอนกด Edit ได้
     function updateTambon(defaultTambon = '') {
         const provName = document.getElementById('province').value;
         const ampName = document.getElementById('amphoe').value;
@@ -226,17 +233,22 @@
         
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
-        const prov = addressData.find(p => p.name_th === provName);
-        const districts = prov?.district || prov?.amphure || [];
-        const amp = districts.find(d => d.name_th === ampName);
-        
-        if (amp) {
-            const tambons = amp.sub_district || amp.tambon || [];
-            tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
-                .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
+        if (ampName) {
+            tamSelect.disabled = false; // 🌟 ปลดล็อคกล่องตำบล
             
-            // ถ้ามีค่าเก่าส่งมา (ตอน Edit) ให้เลือกค่าช้อยส์นั้น
-            if (defaultTambon) tamSelect.value = defaultTambon;
+            const prov = addressData.find(p => p.name_th === provName);
+            const districts = prov?.district || prov?.amphure || [];
+            const amp = districts.find(d => d.name_th === ampName);
+            
+            if (amp) {
+                const tambons = amp.sub_district || amp.tambon || [];
+                tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
+                    .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
+                
+                if (defaultTambon) tamSelect.value = defaultTambon;
+            }
+        } else {
+            tamSelect.disabled = true;
         }
     }
 
