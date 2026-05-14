@@ -102,6 +102,9 @@
                     <button type="submit" id="submitBtn" class="btn btn-success w-100 p-3 fw-bold">
                         <span id="btnText"><i class="fas fa-save me-2"></i> บันทึกข้อมูลใหม่</span>
                     </button>
+                    <button type="button" id="deleteBtn" class="btn btn-danger p-3 fw-bold" style="display:none;" onclick="deleteStudent()">
+        <i class="fas fa-trash-alt me-2"></i> ลบ/ลาออก
+    </button>
                 </div>
             </form>
         </div>
@@ -224,7 +227,46 @@
                 alert('เกิดข้อผิดพลาด');
             });
     });
+// ฟังก์ชันลบข้อมูล
+function deleteStudent() {
+    const id = document.getElementById('studentId').value;
+    const name = document.getElementById('fullName').value;
 
+    if (confirm(`คุณครูยืนยันที่จะลบข้อมูลของ " ${name} " ใช่หรือไม่?\n(ข้อมูลจะถูกลบออกจากฐานข้อมูลถาวร)`)) {
+        showLoading('กำลังลบข้อมูล...');
+        
+        // ส่ง Request แบบ POST โดยระบุ action: 'delete'
+        fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'delete',
+                studentId: id
+            })
+        })
+        .then(() => {
+            hideLoading();
+            alert('ลบข้อมูลเรียบร้อยแล้ว');
+            resetForm(); // ล้างฟอร์มกลับเป็นหน้าว่าง
+        })
+        .catch(err => {
+            hideLoading();
+            alert('เกิดข้อผิดพลาดในการลบ');
+        });
+    }
+}
+
+// แก้ไขฟังก์ชัน fillForm เดิมให้โชว์ปุ่มลบด้วย
+function fillForm(data) {
+    // ... โค้ดเดิมที่คุณครูมี ...
+    document.getElementById('deleteBtn').style.display = 'block'; // โชว์ปุ่มลบ
+}
+
+// แก้ไขฟังก์ชัน resetForm เดิมให้ซ่อนปุ่มลบด้วย
+function resetForm() {
+    // ... โค้ดเดิมของคุณครูมี ...
+    document.getElementById('deleteBtn').style.display = 'none'; // ซ่อนปุ่มลบ
+}
     function showLoading(msg) { 
         document.getElementById('loadingText').innerText = msg;
         document.getElementById('loadingOverlay').style.display = 'flex'; 
