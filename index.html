@@ -65,15 +65,13 @@
         fetch(loginURL)
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
-    sessionStorage.setItem('isLoggedIn', 'true');
-    
-    // (แนะนำ) เก็บชื่อผู้ใช้ไว้โชว์ในหน้า Dashboard ด้วย
-    if (data.name) sessionStorage.setItem('userName', data.name);
-    if (data.role) sessionStorage.setItem('userRole', data.role);
-    
-    window.location.href = 'dashboard.html';  
+                if (data.status === 'success') { // ⚠️ ต้องแก้บรรทัดนี้ครับ
+                    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('userName', data.name);
+                    sessionStorage.setItem('userRole', data.role);
+                    
+                    window.location.href = 'dashboard.html'; 
                 } else {
                     // ถ้ารหัสผิด แสดงข้อความเตือน
                     errorMsg.classList.remove('d-none');
