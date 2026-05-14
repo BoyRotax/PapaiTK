@@ -12,11 +12,11 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
         .card-form { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .section-title { border-bottom: 2px solid #f39c12; padding-bottom: 5px; margin-bottom: 20px; color: #343a40; font-weight: bold;}
+        .img-preview { width: 140px; height: 140px; object-fit: cover; border-radius: 10px; border: 3px solid #dee2e6; margin-bottom: 10px;}
     </style>
 </head>
 <body class="p-4">
 
-<!-- เช็ค Login -->
 <script>
     if (sessionStorage.getItem('isLoggedIn') !== 'true') { window.location.href = 'index.html'; }
 </script>
@@ -28,64 +28,70 @@
     </div>
     
     <div class="card card-form p-4 bg-white">
-        <!-- ฟอร์มข้อมูล -->
         <form id="studentForm">
-            <!-- ⚠️ ฟิลด์ซ่อนสำหรับบอกให้ระบบรู้ว่าต้องทำอะไร (insert หรือ update) -->
             <input type="hidden" id="actionType" name="action" value="insertStudent">
+            
+            <!-- ซ่อน URL รูปเก่า และ ค่า Base64 รูปใหม่ไว้ -->
+            <input type="hidden" id="photoUrl" name="photoUrl">
+            <input type="hidden" id="base64Image" name="base64Image">
 
-            <!-- ส่วนที่ 1: ข้อมูลนักเรียน -->
             <h5 class="section-title"><i class="fas fa-id-card"></i> ข้อมูลนักเรียน</h5>
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">รหัสนักเรียน <span class="text-danger">*</span></label>
-                    <input type="text" id="studentId" name="studentId" class="form-control" required>
+            
+            <!-- 🌟 ส่วนอัปโหลดรูปภาพ 🌟 -->
+            <div class="row mb-4">
+                <div class="col-md-3 text-center">
+                    <img id="previewImg" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="img-preview shadow-sm" alt="รูปโปรไฟล์">
+                    <input type="file" id="imageFile" class="form-control form-control-sm mt-2" accept="image/*">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">ระดับชั้น</label>
-                    <select name="classLevel" id="classLevel" class="form-select">
-                        <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                        <option value="อนุบาล 1">อนุบาล 1</option>
-                        <option value="อนุบาล 2">อนุบาล 2</option>
-                        <option value="อนุบาล 3">อนุบาล 3</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">ห้อง</label>
-                    <input type="number" name="room" id="room" class="form-control" value="1">
+                <div class="col-md-9">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">รหัสนักเรียน <span class="text-danger">*</span></label>
+                            <input type="text" id="studentId" name="studentId" class="form-control" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">ระดับชั้น</label>
+                            <select name="classLevel" id="classLevel" class="form-select">
+                                <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                                <option value="อนุบาล 1">อนุบาล 1</option>
+                                <option value="อนุบาล 2">อนุบาล 2</option>
+                                <option value="อนุบาล 3">อนุบาล 3</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">ห้อง</label>
+                            <input type="number" name="room" id="room" class="form-control" value="1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                            <input type="text" name="fullName" id="fullName" class="form-control" placeholder="ด.ช. / ด.ญ." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">วัน/เดือน/ปีเกิด</label>
+                            <input type="date" name="birthDate" id="birthDate" class="form-control">
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="row mb-3">
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
-                    <input type="text" name="fullName" id="fullName" class="form-control" placeholder="ด.ช. / ด.ญ." required>
-                </div>
+            <div class="row mb-4">
                 <div class="col-md-3">
                     <label class="form-label fw-bold">ชื่อเล่น</label>
                     <input type="text" name="nickName" id="nickName" class="form-control">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">เพศ</label>
                     <select name="gender" id="gender" class="form-select">
-                        <option value="ชาย">ชาย</option>
-                        <option value="หญิง">หญิง</option>
+                        <option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">กรุ๊ปเลือด</label>
                     <select name="bloodType" id="bloodType" class="form-select">
-                        <option value="-">-</option>
-                        <option value="A">A</option><option value="B">B</option>
-                        <option value="O">O</option><option value="AB">AB</option>
+                        <option value="-">-</option><option value="A">A</option><option value="B">B</option><option value="O">O</option><option value="AB">AB</option>
                     </select>
-                </div>
-            </div>
-
-            <!-- วันเกิด -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">วัน/เดือน/ปีเกิด</label>
-                    <input type="date" name="birthDate" id="birthDate" class="form-control">
                 </div>
             </div>
 
@@ -141,10 +147,9 @@
                 </div>
             </div>
 
-            <!-- ปุ่มดำเนินการ -->
             <div class="d-flex justify-content-between mt-4">
                 <button type="button" id="btnDelete" class="btn btn-danger d-none"><i class="fas fa-trash"></i> ลบข้อมูล</button>
-                <button type="submit" id="btnSubmit" class="btn btn-primary px-5 fw-bold"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+                <button type="submit" id="btnSubmit" class="btn btn-primary px-5 fw-bold"><i class="fas fa-upload"></i> บันทึกข้อมูล</button>
             </div>
         </form>
     </div>
@@ -152,7 +157,7 @@
 
 <script>
     // ⚠️ นำ Web App URL ของคุณ (อันล่าสุด) มาใส่ตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyT0uwmf8vbVjHeJ1H312dTnH06AlUIDpj08UkMn1I4cLcSjbXEyxAaiifqNeI3CnTkSQ/exec'; 
 
     const THAI_DATA_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json';
     let addressData = [];
@@ -160,23 +165,30 @@
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('id');
 
-    // โหลดข้อมูลตอนเปิดหน้า
+    // 🌟 ระบบพรีวิวและแปลงรูปภาพเป็น Base64
+    document.getElementById('imageFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('previewImg').src = event.target.result;
+                document.getElementById('base64Image').value = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", async () => {
-        // บังคับรอโหลดจังหวัด
-        try { await loadThaiData(); } 
-        catch (error) { console.error("โหลดข้อมูลจังหวัดไม่สำเร็จ:", error); }
+        try { await loadThaiData(); } catch (error) {}
 
         if (editId) {
-            // --- โหมดแก้ไข ---
             document.getElementById('pageTitle').innerHTML = '<i class="fas fa-user-edit text-warning"></i> แก้ไขข้อมูลนักเรียน';
             document.getElementById('actionType').value = 'updateStudent';
             document.getElementById('studentId').value = editId;
             document.getElementById('studentId').readOnly = true; 
             document.getElementById('btnDelete').classList.remove('d-none'); 
-            
             fetchStudentData(editId); 
         } else {
-            // --- โหมดเพิ่มใหม่ ---
             if(addressData.length > 0) {
                 document.getElementById('province').value = "สระบุรี";
                 updateAmphoe();
@@ -184,14 +196,12 @@
         }
     });
 
-    // ================= โค้ดจัดการที่อยู่ (เวอร์ชันอัลติเมท) =================
+    // ================= โค้ดจัดการที่อยู่ (อัลติเมท) =================
     async function loadThaiData() {
         const response = await fetch(THAI_DATA_URL);
         addressData = await response.json();
-        
         const provSelect = document.getElementById('province');
         provSelect.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
-        
         addressData.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
             .forEach(p => provSelect.add(new Option(p.name_th, p.name_th)));
     }
@@ -200,74 +210,49 @@
         const provName = document.getElementById('province').value;
         const ampSelect = document.getElementById('amphoe');
         const tamSelect = document.getElementById('tambon');
-        
         ampSelect.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
-        
         if (provName) {
-            ampSelect.disabled = false;
-            tamSelect.disabled = true;
-            
+            ampSelect.disabled = false; tamSelect.disabled = true;
             const prov = addressData.find(p => p.name_th === provName);
             if (prov) {
                 let districts = [];
-                // ค้นหา Key ที่เป็น Array อัตโนมัติ
-                for (let key in prov) {
-                    if (Array.isArray(prov[key])) { districts = prov[key]; break; }
-                }
-                
+                for (let key in prov) { if (Array.isArray(prov[key])) { districts = prov[key]; break; } }
                 if(districts.length > 0) {
                     districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                         .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
-                    
                     if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
                 }
             }
-        } else {
-            ampSelect.disabled = true;
-            tamSelect.disabled = true;
-        }
+        } else { ampSelect.disabled = true; tamSelect.disabled = true; }
     }
 
     function updateTambon(defaultTambon = '') {
         const provName = document.getElementById('province').value;
         const ampName = document.getElementById('amphoe').value;
         const tamSelect = document.getElementById('tambon');
-        
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
-        
         if (ampName) {
             tamSelect.disabled = false;
-            
             const prov = addressData.find(p => p.name_th === provName);
             if (prov) {
                 let districts = [];
-                for (let key in prov) {
-                    if (Array.isArray(prov[key])) { districts = prov[key]; break; }
-                }
-                
+                for (let key in prov) { if (Array.isArray(prov[key])) { districts = prov[key]; break; } }
                 const amp = districts.find(d => d.name_th === ampName);
                 if (amp) {
                     let tambons = [];
-                    // ค้นหา Key ที่เป็น Array อัตโนมัติ
-                    for (let key in amp) {
-                        if (Array.isArray(amp[key])) { tambons = amp[key]; break; }
-                    }
-                    
+                    for (let key in amp) { if (Array.isArray(amp[key])) { tambons = amp[key]; break; } }
                     if(tambons.length > 0) {
                         tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                             .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
-                        
                         if (defaultTambon) tamSelect.value = defaultTambon;
                     }
                 }
             }
-        } else {
-            tamSelect.disabled = true;
-        }
+        } else { tamSelect.disabled = true; }
     }
 
-    // ================= ระบบดึงข้อมูลเพื่อแก้ไข =================
+    // ================= ดึงข้อมูลเพื่อแก้ไข =================
     function fetchStudentData(id) {
         const btn = document.getElementById('btnSubmit');
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดึงข้อมูล...';
@@ -291,13 +276,17 @@
                     document.getElementById('motherTel').value = s.MotherTel || '';
                     document.getElementById('emergencyName').value = s.EmergencyName || '';
                     document.getElementById('emergencyTel').value = s.EmergencyTel || '';
+                    
+                    // 🌟 ดึงรูปภาพเก่ามาแสดง
+                    if(s.PhotoUrl) {
+                        document.getElementById('photoUrl').value = s.PhotoUrl;
+                        document.getElementById('previewImg').src = s.PhotoUrl;
+                    }
 
                     if(s.BirthDate) {
                         try {
                             const d = new Date(s.BirthDate);
-                            if(!isNaN(d.getTime())) {
-                                document.getElementById('birthDate').value = d.toISOString().split('T')[0];
-                            }
+                            if(!isNaN(d.getTime())) document.getElementById('birthDate').value = d.toISOString().split('T')[0];
                         } catch(e) {}
                     }
 
@@ -307,7 +296,7 @@
                         updateTambon(s.Tambon);
                     }
                 } else {
-                    alert('ไม่พบข้อมูลนักเรียนรหัส ' + id + ' ในระบบ');
+                    alert('ไม่พบข้อมูลนักเรียนรหัส ' + id);
                     window.location.href = 'dashboard.html';
                 }
             })
@@ -318,20 +307,19 @@
             });
     }
 
-    // ================= ระบบบันทึก (เพิ่ม/แก้ไข) =================
+    // ================= ระบบบันทึก (มีเช็ครูป) =================
     document.getElementById('studentForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSubmit');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+        
+        // ถ้ารูปใหม่ถูกเลือก จะใช้เวลานานขึ้นนิดหน่อยเพื่ออัปโหลด
+        const hasNewImage = document.getElementById('base64Image').value !== "";
+        btn.innerHTML = hasNewImage ? '<span class="spinner-border spinner-border-sm"></span> กำลังอัปโหลดรูปและบันทึก...' : '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
         btn.disabled = true;
 
-        const formData = new FormData(this);
-        const dataObj = Object.fromEntries(formData.entries());
+        const dataObj = Object.fromEntries(new FormData(this).entries());
 
-        fetch(scriptURL, {
-            method: 'POST',
-            body: JSON.stringify(dataObj)
-        })
+        fetch(scriptURL, { method: 'POST', body: JSON.stringify(dataObj) })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
@@ -349,27 +337,16 @@
         });
     });
 
-    // ================= ระบบลบข้อมูล =================
     document.getElementById('btnDelete').addEventListener('click', function() {
-        if(confirm(`คุณต้องการลบข้อมูลของรหัส ${editId} ใช่หรือไม่? \n(การกระทำนี้ไม่สามารถย้อนกลับได้)`)) {
+        if(confirm(`คุณต้องการลบข้อมูลรหัส ${editId} ใช่หรือไม่?`)) {
             const btn = this;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังลบ...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ลบ...';
             btn.disabled = true;
-
-            fetch(scriptURL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'deleteStudent', studentId: editId })
-            })
+            fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'deleteStudent', studentId: editId }) })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
-                    alert(data.msg);
-                    window.location.href = 'dashboard.html';
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + data.msg);
-                    btn.innerHTML = '<i class="fas fa-trash"></i> ลบข้อมูล';
-                    btn.disabled = false;
-                }
+                if (data.status === 'success') { alert(data.msg); window.location.href = 'dashboard.html'; } 
+                else { alert(data.msg); btn.innerHTML = '<i class="fas fa-trash"></i> ลบข้อมูล'; btn.disabled = false; }
             });
         }
     });
