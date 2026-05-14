@@ -150,40 +150,54 @@
 </div>
 
 <script>
-    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
+    // ⚠️ สำคัญมาก: นำ Web App URL ของคุณ (อันใหม่สุด) มาใส่ตรงนี้ ⚠️
     const scriptURL = 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec'; 
 
-    // ตัวแปรสำหรับข้อมูลที่อยู่ประเทศไทย
     const THAI_DATA_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphoe_tambon.json';
     let locationData = [];
 
-    // ตรวจสอบ URL Parameter ว่าเป็นการเพิ่มหรือแก้ไข
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('id');
 
     // โหลดข้อมูลตอนเปิดหน้า
     document.addEventListener("DOMContentLoaded", async () => {
-        await loadThaiData(); // โหลดจังหวัดให้เสร็จก่อน
+        // เช็คก่อนว่าลืมใส่ URL หรือไม่
+        if(scriptURL === 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec' || scriptURL.trim() === '') {
+            alert("⚠️ คุณยังไม่ได้ใส่ Web App URL ในโค้ดหน้า regdata.html ครับ!");
+            return;
+        }
+
+        // ลองโหลดข้อมูลจังหวัดแบบมีระบบป้องกัน Error
+        try {
+            await loadThaiData();
+        } catch (error) {
+            console.error("โหลดข้อมูลจังหวัดไม่สำเร็จ:", error);
+            // ไม่ต้อง alert กวนใจ ปล่อยให้มันทำงานส่วนข้อมูลนักเรียนต่อ
+        }
 
         if (editId) {
-            // โหมดแก้ไข
+            // --- โหมดแก้ไข ---
             document.getElementById('pageTitle').innerHTML = '<i class="fas fa-user-edit text-warning"></i> แก้ไขข้อมูลนักเรียน';
             document.getElementById('actionType').value = 'updateStudent';
             document.getElementById('studentId').value = editId;
             document.getElementById('studentId').readOnly = true; // ห้ามแก้รหัส
             document.getElementById('btnDelete').classList.remove('d-none'); // โชว์ปุ่มลบ
             
-            fetchStudentData(editId);
+            fetchStudentData(editId); // ดึงข้อมูลนักเรียน
         } else {
-            // โหมดเพิ่มใหม่ ตั้งค่าเริ่มต้นเป็น "สระบุรี"
-            document.getElementById('province').value = "สระบุรี";
-            updateAmphoe();
+            // --- โหมดเพิ่มใหม่ ---
+            if(locationData.length > 0) {
+                document.getElementById('province').value = "สระบุรี";
+                updateAmphoe();
+            }
         }
     });
 
     // ================= ระบบจัดการที่อยู่ =================
     async function loadThaiData() {
         const response = await fetch(THAI_DATA_URL);
+        if(!response.ok) throw new Error("ไม่สามารถเชื่อมต่อฐานข้อมูลจังหวัดได้");
+        
         locationData = await response.json();
         
         const provSelect = document.getElementById('province');
@@ -193,8 +207,8 @@
         });
     }
 
-    document.getElementById('province').addEventListener('change', updateAmphoe);
-    document.getElementById('amphoe').addEventListener('change', updateTambon);
+    document.getElementById('province').addEventListener('change', () => updateAmphoe());
+    document.getElementById('amphoe').addEventListener('change', () => updateTambon());
 
     function updateAmphoe(defaultAmphoe = '') {
         const provName = document.getElementById('province').value;
@@ -202,12 +216,14 @@
         ampSelect.innerHTML = '<option value="">เลือกอำเภอ</option>';
         document.getElementById('tambon').innerHTML = '<option value="">เลือกตำบล</option>';
         
-        if (provName) {
+        if (provName && locationData.length > 0) {
             ampSelect.disabled = false;
             const provData = locationData.find(p => p.name_th === provName);
-            provData.amphoe.forEach(a => {
-                ampSelect.innerHTML += `<option value="${a.name_th}">${a.name_th}</option>`;
-            });
+            if(provData) {
+                provData.amphoe.forEach(a => {
+                    ampSelect.innerHTML += `<option value="${a.name_th}">${a.name_th}</option>`;
+                });
+            }
             if (defaultAmphoe) ampSelect.value = defaultAmphoe;
         } else {
             ampSelect.disabled = true;
@@ -221,13 +237,15 @@
         const tamSelect = document.getElementById('tambon');
         tamSelect.innerHTML = '<option value="">เลือกตำบล</option>';
         
-        if (ampName) {
+        if (ampName && locationData.length > 0) {
             tamSelect.disabled = false;
             const provData = locationData.find(p => p.name_th === provName);
-            const ampData = provData.amphoe.find(a => a.name_th === ampName);
-            ampData.tambon.forEach(t => {
-                tamSelect.innerHTML += `<option value="${t.name_th}">${t.name_th}</option>`;
-            });
+            const ampData = provData?.amphoe.find(a => a.name_th === ampName);
+            if(ampData) {
+                ampData.tambon.forEach(t => {
+                    tamSelect.innerHTML += `<option value="${t.name_th}">${t.name_th}</option>`;
+                });
+            }
             if (defaultTambon) tamSelect.value = defaultTambon;
         } else {
             tamSelect.disabled = true;
@@ -236,15 +254,16 @@
 
     // ================= ระบบดึงข้อมูลเพื่อแก้ไข =================
     function fetchStudentData(id) {
-        document.getElementById('btnSubmit').innerHTML = 'กำลังโหลดข้อมูล...';
-        document.getElementById('btnSubmit').disabled = true;
+        const btn = document.getElementById('btnSubmit');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังดึงข้อมูล...';
+        btn.disabled = true;
 
         fetch(`${scriptURL}?action=searchStudent&id=${id}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'found') {
                     const s = data.result;
-                    // เติมข้อมูลลงช่อง (ชื่อคอลัมน์จาก Sheet ต้องตรงกับ Header)
+                    // เติมข้อมูลลงช่อง 
                     document.getElementById('classLevel').value = s.ClassLevel || '';
                     document.getElementById('room').value = s.Room || '';
                     document.getElementById('fullName').value = s.FullName || '';
@@ -259,26 +278,34 @@
                     document.getElementById('emergencyName').value = s.EmergencyName || '';
                     document.getElementById('emergencyTel').value = s.EmergencyTel || '';
 
-                    // จัดการแปลงวันที่ให้อยู่ในรูปแบบ YYYY-MM-DD เพื่อใส่ input type="date"
+                    // จัดการวันที่ (ดัก Error เผื่อช่องใน Sheet ว่าง)
                     if(s.BirthDate) {
                         try {
                             const d = new Date(s.BirthDate);
-                            document.getElementById('birthDate').value = d.toISOString().split('T')[0];
+                            if(!isNaN(d.getTime())) {
+                                document.getElementById('birthDate').value = d.toISOString().split('T')[0];
+                            }
                         } catch(e) {}
                     }
 
-                    // จัดการ dropdown ที่อยู่
-                    if (s.Province) {
+                    // จัดการ dropdown ที่อยู่ (ถ้าข้อมูลจังหวัดโหลดมาสำเร็จ)
+                    if (s.Province && locationData.length > 0) {
                         document.getElementById('province').value = s.Province;
                         updateAmphoe(s.Amphoe);
                         updateTambon(s.Tambon);
                     }
                 } else {
-                    alert('ไม่พบข้อมูลนักเรียนนี้ในระบบ');
+                    alert('ไม่พบข้อมูลนักเรียนรหัส ' + id + ' ในระบบ');
                     window.location.href = 'dashboard.html';
                 }
-                document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
-                document.getElementById('btnSubmit').disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert('เชื่อมต่อฐานข้อมูลล้มเหลว ตรวจสอบ Web App URL ของคุณอีกครั้ง');
+            })
+            .finally(() => {
+                btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
+                btn.disabled = false;
             });
     }
 
@@ -289,7 +316,6 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
         btn.disabled = true;
 
-        // ดึงข้อมูลทั้งหมดจาก Form
         const formData = new FormData(this);
         const dataObj = Object.fromEntries(formData.entries());
 
@@ -301,14 +327,14 @@
         .then(data => {
             if (data.status === 'success') {
                 alert(data.msg);
-                window.location.href = 'dashboard.html'; // กลับหน้าแดชบอร์ดหลังเซฟเสร็จ
+                window.location.href = 'dashboard.html';
             } else {
                 alert('เกิดข้อผิดพลาด: ' + data.msg);
                 btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
                 btn.disabled = false;
             }
         }).catch(err => {
-            alert('เชื่อมต่อล้มเหลว');
+            alert('บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตหรือ Web App URL');
             btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
             btn.disabled = false;
         });
@@ -321,10 +347,7 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังลบ...';
             btn.disabled = true;
 
-            const payload = {
-                action: 'deleteStudent',
-                studentId: editId
-            };
+            const payload = { action: 'deleteStudent', studentId: editId };
 
             fetch(scriptURL, {
                 method: 'POST',
