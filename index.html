@@ -62,26 +62,30 @@
         const loginURL = `${scriptURL}?action=login&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`;
 
         // ยิงข้อมูลไปถาม Google Apps Script
-        fetch(loginURL)
+        fetch(loginURL, { redirect: "follow" })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') { // ⚠️ ต้องแก้บรรทัดนี้ครับ
-                    // ถ้ารหัสถูก บันทึกสถานะแล้วไปหน้า Dashboard
+                // ⚠️ เพิ่มบรรทัดนี้ เพื่อดูว่า Google ส่งอะไรกลับมา!
+                alert("Google ตอบกลับมาว่า Status = " + data.status); 
+
+                if (data.status === 'success') {
+                    alert("กำลังพาไปหน้า Dashboard..."); // ⚠️ แจ้งเตือนก่อนย้ายหน้า
                     sessionStorage.setItem('isLoggedIn', 'true');
                     sessionStorage.setItem('userName', data.name);
                     sessionStorage.setItem('userRole', data.role);
                     
                     window.location.href = 'dashboard.html'; 
                 } else {
-                    // ถ้ารหัสผิด แสดงข้อความเตือน
                     errorMsg.classList.remove('d-none');
+                    // แสดงข้อความ Error ที่ระบบส่งกลับมา
+                    errorMsg.innerHTML = '<small><i class="fas fa-exclamation-circle"></i> ' + data.msg + '</small>';
                     btn.innerHTML = 'เข้าสู่ระบบ';
                     btn.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+                alert('เกิดข้อผิดพลาด: เบราว์เซอร์ถูกบล็อก หรือ URL Web App ผิด');
                 btn.innerHTML = 'เข้าสู่ระบบ';
                 btn.disabled = false;
             });
