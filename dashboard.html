@@ -19,7 +19,7 @@
 </head>
 <body>
 
-<!-- เช็คสถานะ Login ก่อนเลย (ถ้ายังไม่ Login ให้เด้งกลับไป index.html) -->
+<!-- เช็คสถานะ Login -->
 <script>
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'index.html';
@@ -35,8 +35,7 @@
                 <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
             </div>
             <a href="dashboard.html" class="active"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
-            <a href="#"><i class="fas fa-user-graduate me-2"></i> ข้อมูลนักเรียน</a>
-            <a href="#"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลครู</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
             <hr class="text-secondary">
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
@@ -80,13 +79,40 @@
 
             <!-- ตารางข้อมูล -->
             <div class="card card-stat p-4">
-                <h5 class="mb-3 fw-bold"><i class="fas fa-list"></i> รายชื่อนักเรียน</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0"><i class="fas fa-list"></i> รายชื่อนักเรียน</h5>
+                    <a href="regdata.html" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> เพิ่มนักเรียน</a>
+                </div>
+
+                <!-- 🌟 ส่วนที่เพิ่มใหม่: ตัวกรอง ชั้นเรียน และ ห้อง 🌟 -->
+                <div class="row mb-3 bg-light p-2 rounded">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ระดับชั้น:</label>
+                        <select id="filterClass" class="form-select form-select-sm">
+                            <option value="">-- แสดงทั้งหมด --</option>
+                            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                            <option value="อนุบาล 1">อนุบาล 1</option>
+                            <option value="อนุบาล 2">อนุบาล 2</option>
+                            <option value="อนุบาล 3">อนุบาล 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ห้อง:</label>
+                        <select id="filterRoom" class="form-select form-select-sm">
+                            <option value="">-- แสดงทั้งหมด --</option>
+                            <option value="1">ห้อง 1</option>
+                            <option value="2">ห้อง 2</option>
+                            <option value="3">ห้อง 3</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table id="studentTable" class="table table-hover w-100">
                         <thead class="table-light">
                             <tr>
                                 <th>รหัส</th>
-                                <th>ชื่อ-สกุล</th>
+                                <th>ชื่อ-สกุล (คลิกเพื่อแก้ไข)</th>
                                 <th>ชื่อเล่น</th>
                                 <th>ชั้นเรียน</th>
                                 <th>ห้อง</th>
@@ -110,10 +136,9 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ (อันเดียวกับหน้า Login) ⚠️
+    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
     const scriptURL = 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec'; 
 
-    // แสดงชื่อผู้ใช้ที่ Login เข้ามา
     document.getElementById('displayUserName').innerText = sessionStorage.getItem('userName') || 'ผู้ดูแลระบบ';
 
     function logout() {
@@ -121,9 +146,10 @@
         window.location.href = 'index.html';
     }
 
-    // ฟังก์ชันดึงข้อมูลมาแสดงในหน้า Dashboard
+    let dataTable; // ประกาศตัวแปรเก็บตารางไว้ด้านนอก
+
     function loadDashboardData() {
-        // 1. ดึงข้อมูลนักเรียน
+        // ดึงข้อมูลนักเรียน
         fetch(scriptURL + '?action=getStudents')
             .then(res => res.json())
             .then(data => {
@@ -131,12 +157,18 @@
                 document.getElementById('totalMale').innerText = data.filter(s => s.Gender === 'ชาย').length;
                 document.getElementById('totalFemale').innerText = data.filter(s => s.Gender === 'หญิง').length;
 
-                // ใส่ข้อมูลลง DataTable
-                $('#studentTable').DataTable({
+                // 🌟 ส่วนที่แก้ไข: สร้างตารางและทำลิงก์ 🌟
+                dataTable = $('#studentTable').DataTable({
                     data: data,
                     columns: [
                         { data: 'StudentId' },
-                        { data: 'FullName' },
+                        { 
+                            data: 'FullName',
+                            render: function(data, type, row) {
+                                // เปลี่ยนชื่อเป็นลิงก์ส่ง ID ไปหน้า regdata.html
+                                return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
+                            }
+                        },
                         { data: 'NickName' },
                         { data: 'ClassLevel' },
                         { data: 'Room' },
@@ -144,10 +176,22 @@
                     ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
+
+                // 🌟 ผูก Event ให้กับตัวกรอง ชั้นเรียน และ ห้อง 🌟
+                // คอลัมน์ index: 0=ID, 1=ชื่อ, 2=ชื่อเล่น, 3=ชั้นเรียน, 4=ห้อง
+                $('#filterClass').on('change', function() {
+                    dataTable.column(3).search(this.value).draw();
+                });
+                
+                $('#filterRoom').on('change', function() {
+                    // ใช้ Regex เพื่อค้นหาแบบตรงตัว (Exact Match) ป้องกันเลือกห้อง 1 แล้วไปดึงห้อง 10 มาด้วย
+                    let val = this.value ? '^' + this.value + '$' : '';
+                    dataTable.column(4).search(val, true, false).draw();
+                });
             })
             .catch(err => console.error("โหลดข้อมูลนักเรียนไม่สำเร็จ:", err));
 
-        // 2. ดึงข้อมูลครู (เพื่อหาจำนวนรวม)
+        // ดึงข้อมูลครู
         fetch(scriptURL + '?action=getTeachers')
             .then(res => res.json())
             .then(data => {
@@ -156,7 +200,6 @@
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
     }
 
-    // เรียกใช้งานเมื่อเปิดหน้าเว็บ
     $(document).ready(function() {
         loadDashboardData();
     });
