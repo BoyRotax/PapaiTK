@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>จัดการข้อมูลนักเรียน</title>
+    <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,16 +93,16 @@
             <h5 class="section-title"><i class="fas fa-home"></i> ข้อมูลที่อยู่</h5>
             <div class="row mb-4">
                 <div class="col-md-4">
-                    <label class="form-label fw-bold">บ้านเลขที่/หมู่/ซอย</label>
-                    <input type="text" name="addressDetail" id="addressDetail" class="form-control" placeholder="เช่น 123/4 ม.5">
+                    <label class="form-label fw-bold">รายละเอียด (บ้านเลขที่/หมู่/ซอย)</label>
+                    <input type="text" name="addressDetail" id="addressDetail" class="form-control">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">จังหวัด</label>
-                    <select id="province" name="province" class="form-select"></select>
+                    <select id="province" name="province" class="form-select" onchange="updateAmphoe()"></select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">อำเภอ</label>
-                    <select id="amphoe" name="amphoe" class="form-select" disabled></select>
+                    <select id="amphoe" name="amphoe" class="form-select" disabled onchange="updateTambon()"></select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold">ตำบล</label>
@@ -142,32 +143,29 @@
 
             <!-- ปุ่มดำเนินการ -->
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" id="btnDelete" class="btn btn-danger d-none"><i class="fas fa-trash"></i> ลบข้อมูลนักเรียน</button>
+                <button type="button" id="btnDelete" class="btn btn-danger d-none"><i class="fas fa-trash"></i> ลบข้อมูล</button>
                 <button type="submit" id="btnSubmit" class="btn btn-primary px-5 fw-bold"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
             </div>
         </form>
     </div>
 </div>
+
 <script>
-    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
+    // ⚠️ นำ Web App URL ของคุณ (อันล่าสุด) มาใส่ตรงนี้ ⚠️
     const scriptURL = 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec'; 
 
-    let addressData = []; // เปลี่ยนชื่อตัวแปรตามโค้ดของคุณ
+    const THAI_DATA_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json';
+    let addressData = [];
 
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('id');
 
     // โหลดข้อมูลตอนเปิดหน้า
     document.addEventListener("DOMContentLoaded", async () => {
-        
-        // 1. บังคับให้รอโหลดข้อมูลจังหวัดให้เสร็จก่อนทำอย่างอื่น
-        try {
-            await loadThaiData();
-        } catch (error) {
-            console.error("โหลดข้อมูลจังหวัดไม่สำเร็จ:", error);
-        }
+        // บังคับรอโหลดจังหวัด
+        try { await loadThaiData(); } 
+        catch (error) { console.error("โหลดข้อมูลจังหวัดไม่สำเร็จ:", error); }
 
-        // 2. เมื่อจังหวัดพร้อมแล้ว ค่อยไปดึงข้อมูลเด็ก หรือตั้งค่าเริ่มต้น
         if (editId) {
             // --- โหมดแก้ไข ---
             document.getElementById('pageTitle').innerHTML = '<i class="fas fa-user-edit text-warning"></i> แก้ไขข้อมูลนักเรียน';
@@ -176,7 +174,7 @@
             document.getElementById('studentId').readOnly = true; 
             document.getElementById('btnDelete').classList.remove('d-none'); 
             
-            fetchStudentData(editId); // ดึงข้อมูลนักเรียนมาเติม
+            fetchStudentData(editId); 
         } else {
             // --- โหมดเพิ่มใหม่ ---
             if(addressData.length > 0) {
@@ -186,9 +184,9 @@
         }
     });
 
-    // ================= โค้ดจัดการที่อยู่ (เวอร์ชันอัปเกรดจากของคุณ) =================
+    // ================= โค้ดจัดการที่อยู่ (เวอร์ชันอัลติเมท) =================
     async function loadThaiData() {
-        const response = await fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/latest/province_with_district_and_sub_district.json');
+        const response = await fetch(THAI_DATA_URL);
         addressData = await response.json();
         
         const provSelect = document.getElementById('province');
@@ -198,8 +196,7 @@
             .forEach(p => provSelect.add(new Option(p.name_th, p.name_th)));
     }
 
-    // เพิ่ม Parameter defaultAmphoe เพื่อให้จดจำค่าตอนกด Edit ได้
-function updateAmphoe(defaultAmphoe = '') {
+    function updateAmphoe(defaultAmphoe = '') {
         const provName = document.getElementById('province').value;
         const ampSelect = document.getElementById('amphoe');
         const tamSelect = document.getElementById('tambon');
@@ -213,12 +210,18 @@ function updateAmphoe(defaultAmphoe = '') {
             
             const prov = addressData.find(p => p.name_th === provName);
             if (prov) {
-                // 🌟 ดักจับชื่อ Key ทุกรูปแบบที่คนไทยชอบตั้ง (เพิ่ม prov.amphoe เข้าไป)
-                const districts = prov.amphoe || prov.amphure || prov.district || [];
-                districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
-                    .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
+                let districts = [];
+                // ค้นหา Key ที่เป็น Array อัตโนมัติ
+                for (let key in prov) {
+                    if (Array.isArray(prov[key])) { districts = prov[key]; break; }
+                }
                 
-                if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
+                if(districts.length > 0) {
+                    districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
+                        .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
+                    
+                    if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
+                }
             }
         } else {
             ampSelect.disabled = true;
@@ -237,16 +240,27 @@ function updateAmphoe(defaultAmphoe = '') {
             tamSelect.disabled = false;
             
             const prov = addressData.find(p => p.name_th === provName);
-            const districts = prov?.amphoe || prov?.amphure || prov?.district || [];
-            const amp = districts.find(d => d.name_th === ampName);
-            
-            if (amp) {
-                // 🌟 ดักจับชื่อ Key ตำบลทุกรูปแบบ
-                const tambons = amp.tambon || amp.sub_district || [];
-                tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
-                    .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
+            if (prov) {
+                let districts = [];
+                for (let key in prov) {
+                    if (Array.isArray(prov[key])) { districts = prov[key]; break; }
+                }
                 
-                if (defaultTambon) tamSelect.value = defaultTambon;
+                const amp = districts.find(d => d.name_th === ampName);
+                if (amp) {
+                    let tambons = [];
+                    // ค้นหา Key ที่เป็น Array อัตโนมัติ
+                    for (let key in amp) {
+                        if (Array.isArray(amp[key])) { tambons = amp[key]; break; }
+                    }
+                    
+                    if(tambons.length > 0) {
+                        tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
+                            .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
+                        
+                        if (defaultTambon) tamSelect.value = defaultTambon;
+                    }
+                }
             }
         } else {
             tamSelect.disabled = true;
@@ -264,7 +278,6 @@ function updateAmphoe(defaultAmphoe = '') {
             .then(data => {
                 if (data.status === 'found') {
                     const s = data.result;
-                    // เติมข้อมูลลงช่อง 
                     document.getElementById('classLevel').value = s.ClassLevel || '';
                     document.getElementById('room').value = s.Room || '';
                     document.getElementById('fullName').value = s.FullName || '';
@@ -288,11 +301,10 @@ function updateAmphoe(defaultAmphoe = '') {
                         } catch(e) {}
                     }
 
-                    // 🌟 จุดสำคัญ: ยัดข้อมูลที่อยู่ลงไป โดยส่งค่าไปให้ฟังก์ชันของคุณ
                     if (s.Province && addressData.length > 0) {
                         document.getElementById('province').value = s.Province;
-                        updateAmphoe(s.Amphoe); // ส่งอำเภอไปให้เลือก
-                        updateTambon(s.Tambon); // ส่งตำบลไปให้เลือก
+                        updateAmphoe(s.Amphoe);
+                        updateTambon(s.Tambon);
                     }
                 } else {
                     alert('ไม่พบข้อมูลนักเรียนรหัส ' + id + ' ในระบบ');
@@ -330,6 +342,10 @@ function updateAmphoe(defaultAmphoe = '') {
                 btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
                 btn.disabled = false;
             }
+        }).catch(err => {
+            alert('การเชื่อมต่อล้มเหลว กรุณาลองใหม่');
+            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
+            btn.disabled = false;
         });
     });
 
@@ -351,7 +367,7 @@ function updateAmphoe(defaultAmphoe = '') {
                     window.location.href = 'dashboard.html';
                 } else {
                     alert('เกิดข้อผิดพลาด: ' + data.msg);
-                    btn.innerHTML = '<i class="fas fa-trash"></i> ลบข้อมูลนักเรียน';
+                    btn.innerHTML = '<i class="fas fa-trash"></i> ลบข้อมูล';
                     btn.disabled = false;
                 }
             });
