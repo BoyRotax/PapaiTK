@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อมูลบุคลากร - ศพด.ทับกวาง (ป่าไผ่)</title>
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
+        .teacher-card { transition: transform 0.2s; border-radius: 15px; }
+        .teacher-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+        .profile-img { width: 120px; height: 120px; object-fit: cover; border: 4px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'index.html';
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
+            <a href="teachers.html" class="active"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            <hr class="text-secondary">
+            <a href="#" onclick="sessionStorage.clear(); window.location.href='index.html';" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold"><i class="fas fa-chalkboard-teacher text-primary"></i> ทำเนียบบุคลากร</h3>
+                <button class="btn btn-success" onclick="openModal('insert')"><i class="fas fa-plus"></i> เพิ่มบุคลากร</button>
+            </div>
+
+            <!-- แท็บ ปัจจุบัน / อดีต -->
+            <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="pills-current-tab" data-bs-toggle="pill" data-bs-target="#pills-current" type="button" role="tab">บุคลากรปัจจุบัน</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="pills-former-tab" data-bs-toggle="pill" data-bs-target="#pills-former" type="button" role="tab">อดีตบุคลากร</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="pills-tabContent">
+                <!-- หน้าบุคลากรปัจจุบัน -->
+                <div class="tab-pane fade show active" id="pills-current" role="tabpanel">
+                    <div id="loading1" class="text-center py-5"><div class="spinner-border text-primary"></div><p>กำลังโหลดข้อมูล...</p></div>
+                    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-4 g-4" id="currentStaffGrid"></div>
+                </div>
+                <!-- หน้าอดีตบุคลากร -->
+                <div class="tab-pane fade" id="pills-former" role="tabpanel">
+                    <div id="loading2" class="text-center py-5 d-none"><div class="spinner-border text-primary"></div><p>กำลังโหลดข้อมูล...</p></div>
+                    <div class="row row-cols-1 row-cols-md-3 row-cols-xl-4 g-4" id="formerStaffGrid"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal สำหรับเพิ่ม/แก้ไข -->
+<div class="modal fade" id="teacherModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-user-edit"></i> จัดการข้อมูลบุคลากร</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="teacherForm">
+        <div class="modal-body">
+            <input type="hidden" id="actionType" name="action" value="insertTeacher">
+            
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">รหัสพนักงาน <span class="text-danger">*</span></label>
+                    <input type="text" id="empId" name="empId" class="form-control" required>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">ลิงก์รูปภาพ (Photo URL)</label>
+                    <input type="url" id="photoUrl" name="photoUrl" class="form-control" placeholder="วางลิงก์รูปภาพจากเน็ต หรือ Google Drive">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">คำนำหน้า</label>
+                    <select id="title" name="title" class="form-select">
+                        <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">ชื่อ - นามสกุล <span class="text-danger">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">ตำแหน่ง</label>
+                    <input type="text" id="position" name="position" class="form-control" placeholder="เช่น ครูประจำชั้น">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">ประจำชั้น</label>
+                    <select id="assignedClass" name="assignedClass" class="form-select">
+                        <option value="-">ไม่มี</option><option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                        <option value="อนุบาล 1">อนุบาล 1</option><option value="อนุบาล 2">อนุบาล 2</option><option value="อนุบาล 3">อนุบาล 3</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">ห้อง</label>
+                    <input type="number" id="assignedRoom" name="assignedRoom" class="form-control">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">เบอร์โทรศัพท์</label>
+                    <input type="text" id="tel" name="tel" class="form-control">
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">วันเริ่มงาน</label>
+                    <input type="date" id="startDate" name="startDate" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">สถานะ</label>
+                    <select id="status" name="status" class="form-select border-primary">
+                        <option value="ปัจจุบัน">ปัจจุบัน</option>
+                        <option value="อดีตบุคลากร">อดีตบุคลากร (ลาออก/ย้าย)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+            <button type="button" id="btnDelete" class="btn btn-danger d-none"><i class="fas fa-trash"></i> ลบข้อมูล</button>
+            <div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" id="btnSubmit" class="btn btn-primary px-4 fw-bold"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+            </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ⚠️ นำ Web App URL ของคุณ (อันใหม่สุด) มาใส่ตรงนี้ ⚠️
+    const scriptURL = 'ใส่_URL_WEB_APP_ของคุณที่นี่'; 
+
+    const teacherModal = new bootstrap.Modal(document.getElementById('teacherModal'));
+    let allTeachers = []; // เก็บข้อมูลครูไว้ใช้ตอนกด Edit
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadTeachers();
+    });
+
+    // ================= ระบบคำนวณอายุงาน และ วันที่ =================
+    function getTenure(startDate) {
+        if (!startDate) return "-";
+        const start = new Date(startDate);
+        if (isNaN(start)) return "-";
+        const now = new Date();
+        let years = now.getFullYear() - start.getFullYear();
+        let months = now.getMonth() - start.getMonth();
+        if (months < 0) { years--; months += 12; }
+        if (years === 0 && months === 0) return "เริ่มงานเดือนนี้";
+        let str = "";
+        if (years > 0) str += `${years} ปี `;
+        if (months > 0) str += `${months} เดือน`;
+        return str.trim();
+    }
+
+    function formatDateTH(isoString) {
+        if (!isoString) return "-";
+        const d = new Date(isoString);
+        if (isNaN(d)) return "-";
+        return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    // ================= โหลดข้อมูลครูมาแสดงายในการ์ด =================
+    function loadTeachers() {
+        document.getElementById('loading1').classList.remove('d-none');
+        document.getElementById('loading2').classList.remove('d-none');
+        document.getElementById('currentStaffGrid').innerHTML = '';
+        document.getElementById('formerStaffGrid').innerHTML = '';
+
+        fetch(scriptURL + '?action=getTeachers')
+            .then(res => res.json())
+            .then(data => {
+                allTeachers = data; // เก็บไว้ใช้ตอน Edit
+                let currentHTML = '';
+                let formerHTML = '';
+
+                data.forEach(t => {
+                    // ถ้ารูปว่าง ให้ใช้รูปอวตารแทน
+                    const imgUrl = t.PhotoUrl ? t.PhotoUrl : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                    const badgeColor = t.Status === 'ปัจจุบัน' ? 'bg-success' : 'bg-secondary';
+                    const roomTxt = t.AssignedRoom ? `ห้อง ${t.AssignedRoom}` : '';
+                    
+                    const cardHTML = `
+                        <div class="col">
+                            <div class="card teacher-card h-100 shadow-sm border-0 text-center pt-4 pb-2">
+                                <div class="position-relative">
+                                    <img src="${imgUrl}" class="profile-img rounded-circle">
+                                    <span class="position-absolute top-0 end-0 badge ${badgeColor} me-3 mt-2">${t.Status || 'ปัจจุบัน'}</span>
+                                </div>
+                                <div class="card-body px-3">
+                                    <h5 class="card-title fw-bold text-dark mb-1">${t.Title || ''}${t.Name || ''}</h5>
+                                    <h6 class="text-primary mb-3">${t.Position || '-'}</h6>
+                                    <div class="bg-light p-2 rounded mb-3 text-start small">
+                                        <p class="mb-1 text-muted"><i class="fas fa-chalkboard-teacher me-1"></i> ชั้น: <span class="text-dark">${t.AssignedClass || '-'} ${roomTxt}</span></p>
+                                        <p class="mb-1 text-muted"><i class="fas fa-calendar-alt me-1"></i> เริ่มงาน: <span class="text-dark">${formatDateTH(t.StartDate)}</span></p>
+                                        <p class="mb-0 text-muted"><i class="fas fa-clock me-1"></i> อายุงาน: <span class="fw-bold text-dark">${getTenure(t.StartDate)}</span></p>
+                                    </div>
+                                    <button class="btn btn-outline-warning btn-sm w-100 fw-bold" onclick="openModal('update', '${t.EmpId}')"><i class="fas fa-edit"></i> แก้ไขข้อมูล</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (t.Status === 'อดีตบุคลากร') formerHTML += cardHTML;
+                    else currentHTML += cardHTML;
+                });
+
+                document.getElementById('currentStaffGrid').innerHTML = currentHTML || '<div class="col-12 text-center text-muted mt-4">ยังไม่มีข้อมูลบุคลากรปัจจุบัน</div>';
+                document.getElementById('formerStaffGrid').innerHTML = formerHTML || '<div class="col-12 text-center text-muted mt-4">ไม่มีข้อมูลอดีตบุคลากร</div>';
+                
+                document.getElementById('loading1').classList.add('d-none');
+                document.getElementById('loading2').classList.add('d-none');
+            });
+    }
+
+    // ================= เปิด Modal (เพิ่ม / แก้ไข) =================
+    function openModal(mode, empId = null) {
+        document.getElementById('teacherForm').reset();
+        
+        if (mode === 'insert') {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus"></i> เพิ่มบุคลากรใหม่';
+            document.getElementById('actionType').value = 'insertTeacher';
+            document.getElementById('empId').readOnly = false;
+            document.getElementById('btnDelete').classList.add('d-none');
+        } else {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit"></i> แก้ไขข้อมูลบุคลากร';
+            document.getElementById('actionType').value = 'updateTeacher';
+            document.getElementById('empId').readOnly = true;
+            document.getElementById('btnDelete').classList.remove('d-none');
+            
+            // ดึงข้อมูลเดิมมาใส่ Form
+            const t = allTeachers.find(x => x.EmpId == empId);
+            if(t) {
+                document.getElementById('empId').value = t.EmpId;
+                document.getElementById('photoUrl').value = t.PhotoUrl || '';
+                document.getElementById('title').value = t.Title || 'นาย';
+                document.getElementById('name').value = t.Name || '';
+                document.getElementById('position').value = t.Position || '';
+                document.getElementById('assignedClass').value = t.AssignedClass || '-';
+                document.getElementById('assignedRoom').value = t.AssignedRoom || '';
+                document.getElementById('tel').value = t.Tel || '';
+                document.getElementById('status').value = t.Status || 'ปัจจุบัน';
+                
+                if(t.StartDate) {
+                    try {
+                        const d = new Date(t.StartDate);
+                        if(!isNaN(d.getTime())) document.getElementById('startDate').value = d.toISOString().split('T')[0];
+                    } catch(e){}
+                }
+            }
+        }
+        teacherModal.show();
+    }
+
+    // ================= บันทึก / ลบ =================
+    document.getElementById('teacherForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmit');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> บันทึก...';
+        btn.disabled = true;
+
+        const dataObj = Object.fromEntries(new FormData(this).entries());
+
+        fetch(scriptURL, { method: 'POST', body: JSON.stringify(dataObj) })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.msg);
+            if (data.status === 'success') {
+                teacherModal.hide();
+                loadTeachers(); // โหลดข้อมูลใหม่ทันที
+            }
+        }).finally(() => {
+            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
+            btn.disabled = false;
+        });
+    });
+
+    document.getElementById('btnDelete').addEventListener('click', function() {
+        const id = document.getElementById('empId').value;
+        if(confirm(`ยืนยันการลบรหัสพนักงาน ${id} ใช่หรือไม่?`)) {
+            const btn = this;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ลบ...';
+            btn.disabled = true;
+
+            fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'deleteTeacher', empId: id }) })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg);
+                if (data.status === 'success') {
+                    teacherModal.hide();
+                    loadTeachers();
+                }
+            }).finally(() => {
+                btn.innerHTML = '<i class="fas fa-trash"></i> ลบข้อมูล';
+                btn.disabled = false;
+            });
+        }
+    });
+</script>
+</body>
+</html>
