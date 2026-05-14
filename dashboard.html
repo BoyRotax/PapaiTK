@@ -25,7 +25,6 @@
         window.location.href = 'index.html';
     }
 </script>
-
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
@@ -36,8 +35,9 @@
             </div>
             <a href="dashboard.html" class="active"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
             <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
+            <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
             <hr class="text-secondary">
-            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+            <a href="#" onclick="sessionStorage.clear(); window.location.href='index.html';" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
         <!-- Main Content -->
