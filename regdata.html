@@ -152,21 +152,12 @@
 <script>
     // ⚠️ สำคัญมาก: นำ Web App URL ของคุณ (อันใหม่สุด) มาใส่ตรงนี้ ⚠️
     const scriptURL = 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec'; 
-
     const THAI_DATA_URL = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphoe_tambon.json';
     let locationData = [];
-
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('id');
-
     // โหลดข้อมูลตอนเปิดหน้า
     document.addEventListener("DOMContentLoaded", async () => {
-        // เช็คก่อนว่าลืมใส่ URL หรือไม่
-        if(scriptURL === 'https://script.google.com/macros/s/AKfycbypUi0mbHAcLtoSOCOx_oVNnzyRX7N1vBnpPu3yGpVTUxgRNuV0u1YXzfvWHzywGgYgyg/exec' || scriptURL.trim() === '') {
-            alert("⚠️ คุณยังไม่ได้ใส่ Web App URL ในโค้ดหน้า regdata.html ครับ!");
-            return;
-        }
-
         // ลองโหลดข้อมูลจังหวัดแบบมีระบบป้องกัน Error
         try {
             await loadThaiData();
