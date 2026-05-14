@@ -117,7 +117,7 @@
                                 <th>ชั้นเรียน</th>
                                 <th>ห้อง</th>
                                 <th>เพศ</th>
-                                <th>วดป</th>
+                                <th>อายุ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -174,8 +174,15 @@
                         { data: 'ClassLevel' },
                         { data: 'Room' },
                         { data: 'Gender' },
-                        { data: 'BirthDate' }
-                    ],
+                        // 🌟 แก้คอลัมน์อายุให้เป็นแบบนี้ครับ
+        { 
+            data: 'BirthDate',
+            render: function(data, type, row) {
+                // เรียกใช้ฟังก์ชัน getAgeInThai แปลงวันเกิดเป็นอายุ
+                return getAgeInThai(data); 
+            }
+        }
+    ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
 
@@ -201,6 +208,32 @@
             })
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
     }
+    // ================= ระบบคำนวณอายุเด็ก (ขวบ/เดือน) =================
+function getAgeInThai(birthDateString) {
+    if (!birthDateString) return "-";
+    const birthDate = new Date(birthDateString);
+    if (isNaN(birthDate.getTime())) return "-";
+
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+
+    if (today.getDate() < birthDate.getDate()) {
+        months--;
+    }
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    if (years === 0 && months === 0) return "ไม่ถึง 1 เดือน";
+
+    let result = "";
+    if (years > 0) result += years + " ขวบ ";
+    if (months > 0) result += months + " เดือน";
+
+    return result.trim();
+}
 
     $(document).ready(function() {
         loadDashboardData();
