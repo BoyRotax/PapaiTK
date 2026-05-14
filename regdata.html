@@ -208,19 +208,19 @@ function updateAmphoe(defaultAmphoe = '') {
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         if (provName) {
-            ampSelect.disabled = false; // 🌟 ปลดล็อคกล่องอำเภอ
-            tamSelect.disabled = true;  // ล็อคกล่องตำบลไว้ก่อนรอเลือกอำเภอ
+            ampSelect.disabled = false;
+            tamSelect.disabled = true;
             
             const prov = addressData.find(p => p.name_th === provName);
             if (prov) {
-                const districts = prov.district || prov.amphure || [];
+                // 🌟 ดักจับชื่อ Key ทุกรูปแบบที่คนไทยชอบตั้ง (เพิ่ม prov.amphoe เข้าไป)
+                const districts = prov.amphoe || prov.amphure || prov.district || [];
                 districts.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                     .forEach(d => ampSelect.add(new Option(d.name_th, d.name_th)));
                 
                 if (defaultAmphoe) ampSelect.value = defaultAmphoe; 
             }
         } else {
-            // ถ้าไม่ได้เลือกจังหวัด ให้ล็อคทั้งสองกล่อง
             ampSelect.disabled = true;
             tamSelect.disabled = true;
         }
@@ -234,14 +234,15 @@ function updateAmphoe(defaultAmphoe = '') {
         tamSelect.innerHTML = '<option value="">-- เลือกตำบล --</option>';
         
         if (ampName) {
-            tamSelect.disabled = false; // 🌟 ปลดล็อคกล่องตำบล
+            tamSelect.disabled = false;
             
             const prov = addressData.find(p => p.name_th === provName);
-            const districts = prov?.district || prov?.amphure || [];
+            const districts = prov?.amphoe || prov?.amphure || prov?.district || [];
             const amp = districts.find(d => d.name_th === ampName);
             
             if (amp) {
-                const tambons = amp.sub_district || amp.tambon || [];
+                // 🌟 ดักจับชื่อ Key ตำบลทุกรูปแบบ
+                const tambons = amp.tambon || amp.sub_district || [];
                 tambons.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th'))
                     .forEach(t => tamSelect.add(new Option(t.name_th, t.name_th)));
                 
