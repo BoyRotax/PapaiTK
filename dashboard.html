@@ -165,7 +165,7 @@
                                 <th>ชั้นเรียน</th>
                                 <th>ห้อง</th>
                                 <th>เพศ</th>
-                                <th>อายุ</th>
+                                <th>ว/ด/ป เกิด</th> <th>อายุ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,7 +204,7 @@
                 document.getElementById('totalMale').innerText = data.filter(s => s.Gender === 'ชาย').length;
                 document.getElementById('totalFemale').innerText = data.filter(s => s.Gender === 'หญิง').length;
 
-                // สร้างตาราง
+// ================= สร้างตาราง DataTables =================
                 dataTable = $('#studentTable').DataTable({
                     data: data,
                     columns: [
@@ -216,30 +216,36 @@
                             }
                         },
                         { data: 'NickName' },
-                        { data: 'ClassLevel' },
-                        { data: 'Room' },
+                        { data: 'ClassLevel' }, // Index 3
+                        { data: 'Room' },       // Index 4
                         { data: 'Gender' },
                         { 
-                            data: 'BirthDate',
-                            render: function(data, type, row) {
-                                return getAgeInThai(data); 
-                            }
+                            data: 'BirthDate',  // Index 6 (ว/ด/ป เกิด)
+                            render: function(data) { return formatThaiDate(data); }
+                        },
+                        { 
+                            data: 'BirthDate',  // Index 7 (อายุ)
+                            render: function(data) { return getAgeInThai(data); }
                         }
                     ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
 
-                // ผูก Event ให้กับตัวกรอง ชั้นเรียน และ ห้อง หลังจากที่สร้างตารางเสร็จ
+                // ================= ผูก Event Dropdown (กรองปุ๊บ ซ่อนคอลัมน์ปั๊บ) =================
                 $('#filterClass').on('change', function() {
-                    // ค้นหาคอลัมน์ที่ 3 (ชั้นเรียน) แบบเป๊ะๆ
                     let val = this.value ? '^' + this.value + '$' : '';
                     dataTable.column(3).search(val, true, false).draw();
+                    
+                    // 🌟 ถ้าเลือกชั้นเรียน ให้ซ่อนคอลัมน์ "ชั้นเรียน" (Index 3)
+                    dataTable.column(3).visible(this.value ? false : true);
                 });
                 
                 $('#filterRoom').on('change', function() {
-                    // ค้นหาคอลัมน์ที่ 4 (ห้อง) แบบเป๊ะๆ
                     let val = this.value ? '^' + this.value + '$' : '';
                     dataTable.column(4).search(val, true, false).draw();
+                    
+                    // 🌟 ถ้าเลือกห้อง ให้ซ่อนคอลัมน์ "ห้อง" (Index 4)
+                    dataTable.column(4).visible(this.value ? false : true);
                 });
             })
             .catch(err => console.error("โหลดข้อมูลนักเรียนไม่สำเร็จ:", err));
@@ -253,7 +259,7 @@
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
     }
 
-    // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print) =================
+    // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print V.2) =================
     function printTable() {
         if(!dataTable) return;
 
@@ -270,35 +276,46 @@
         if (uniqueClasses.length === 1 && uniqueClasses[0]) {
             headerText += " ระดับชั้น" + uniqueClasses[0]; 
         }
-        
-        let hideRoomColumn = false;
-        if (uniqueRooms.length === 1) {
-            hideRoomColumn = true;
-        } else if (uniqueClasses.length === 1 && uniqueRooms.length > 1) {
+        if (uniqueClasses.length === 1 && uniqueRooms.length > 1) {
             headerText += " (รวมทุกห้อง)"; 
         }
-
         $('#printTitle').text(headerText);
 
+        // จำสถานะว่าตอนนี้ตารางโชว์หน้าละกี่แถว และซ่อนคอลัมน์ไหนไว้บ้าง
         const oldLength = dataTable.page.len();
+        const oldClassVis = dataTable.column(3).visible();
+        const oldRoomVis = dataTable.column(4).visible();
         
-        if(hideRoomColumn) {
-            dataTable.column(4).visible(false);
-        }
+        // ถ้าข้อมูลมีแค่ชั้นเดียว/ห้องเดียว ให้บังคับซ่อนตอนปริ๊น
+        if(uniqueClasses.length === 1) dataTable.column(3).visible(false);
+        if(uniqueRooms.length === 1) dataTable.column(4).visible(false);
 
+        // กางตารางออกทุกแถวเพื่อเตรียมปริ๊น
         dataTable.page.len(-1).draw(false);
 
         setTimeout(function() {
             window.print();
             
+            // ปริ๊นเสร็จ คืนร่างกลับเป็นเหมือนเดิมเป๊ะๆ
             dataTable.page.len(oldLength);
-            if(hideRoomColumn) {
-                dataTable.column(4).visible(true); 
-            }
+            dataTable.column(3).visible(oldClassVis); 
+            dataTable.column(4).visible(oldRoomVis); 
             dataTable.draw(false);
         }, 500);
     }
-
+    // ================= ระบบจัดฟอร์แมตวันที่ (DD/MM/YYYY) =================
+    function formatThaiDate(dateString) {
+        if (!dateString) return "-";
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString; // ถ้าไม่ใช่วันที่ ให้แสดงข้อความเดิม
+        
+        let dDate = d.getDate().toString().padStart(2, '0');
+        let mMonth = (d.getMonth() + 1).toString().padStart(2, '0');
+        let yYear = d.getFullYear();
+        if (yYear < 2400) yYear += 543; // แปลง ค.ศ. เป็น พ.ศ.
+        
+        return `${dDate}/${mMonth}/${yYear}`;
+    }
     // ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
     function getAgeInThai(birthDateString) {
         if (!birthDateString) return "-";
