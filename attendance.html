@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เช็คชื่อนักเรียน - ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
+        .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        /* ตกแต่งตารางเช็คชื่อ */
+        .table-attendance th, .table-attendance td { vertical-align: middle; }
+        .btn-group-status .btn { padding: 5px 15px; font-weight: 600; }
+        .note-input { border-radius: 20px; border: 1px solid #ccc; padding: 5px 15px; width: 100%; outline: none; }
+        .note-input:focus { border-color: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,0.5); }
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'index.html';
+    }
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="attendance.html" class="active"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
+            <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            <hr class="text-secondary">
+            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold"><i class="fas fa-user-check text-primary"></i> ระบบเช็คชื่อนักเรียนรายวัน</h3>
+                <div class="badge bg-primary fs-6 p-2 rounded-pill">
+                    <i class="fas fa-user me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
+                </div>
+            </div>
+
+            <div class="card card-stat p-4 mb-4 border-top border-primary border-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">วันที่เช็คชื่อ:</label>
+                        <input type="date" id="attendanceDate" class="form-control fw-bold">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ระดับชั้น:</label>
+                        <select id="filterClass" class="form-select">
+                            <option value="">-- เลือกระดับชั้น --</option>
+                            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                            <option value="อนุบาล 1">อนุบาล 1</option>
+                            <option value="อนุบาล 2">อนุบาล 2</option>
+                            <option value="อนุบาล 3">อนุบาล 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ห้อง:</label>
+                        <select id="filterRoom" class="form-select">
+                            <option value="">-- เลือกห้อง --</option>
+                            <option value="1">ห้อง 1</option>
+                            <option value="2">ห้อง 2</option>
+                            <option value="3">ห้อง 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100 fw-bold" onclick="fetchStudentsForAttendance()">
+                            <i class="fas fa-search"></i> ดึงรายชื่อ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="attendanceContainer" class="card card-stat p-4 d-none">
+                <div class="table-responsive">
+                    <table class="table table-hover table-attendance w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th>รหัส</th>
+                                <th>ชื่อ-สกุล</th>
+                                <th class="text-center">สถานะ (คลิกเพื่อเปลี่ยน)</th>
+                                <th>หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentListBody">
+                            </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-end mt-3">
+                    <button id="saveBtn" class="btn btn-success btn-lg fw-bold px-5" onclick="submitAttendance()">
+                        <i class="fas fa-save"></i> บันทึกการเช็คชื่อ
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script>
+    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
+
+    document.getElementById('displayUserName').innerText = sessionStorage.getItem('userName') || 'ผู้ดูแลระบบ';
+
+    // เซ็ตวันที่เริ่มต้นเป็น "วันนี้" อัตโนมัติ
+    document.getElementById('attendanceDate').valueAsDate = new Date();
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    let currentStudents = [];
+
+    // ================= 1. ดึงรายชื่อตามชั้นและห้อง =================
+    function fetchStudentsForAttendance() {
+        const selectedClass = document.getElementById('filterClass').value;
+        const selectedRoom = document.getElementById('filterRoom').value;
+
+        if (!selectedClass) {
+            Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้นก่อนดึงรายชื่อครับ', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'กำลังดึงข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading() }
+        });
+
+        fetch(scriptURL + '?action=getStudents')
+            .then(res => res.json())
+            .then(data => {
+                // กรองเด็กตามชั้นและห้องที่เลือก
+                currentStudents = data.filter(s => s.ClassLevel === selectedClass && (selectedRoom === "" || s.Room === selectedRoom));
+                
+                if (currentStudents.length === 0) {
+                    Swal.fire('ไม่พบข้อมูล', 'ไม่มีรายชื่อนักเรียนในห้องที่เลือกครับ', 'info');
+                    document.getElementById('attendanceContainer').classList.add('d-none');
+                    return;
+                }
+
+                renderAttendanceTable();
+                Swal.close();
+                document.getElementById('attendanceContainer').classList.remove('d-none');
+            })
+            .catch(err => {
+                Swal.fire('ผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
+                console.error(err);
+            });
+    }
+
+    // ================= 2. สร้างตารางและปุ่มกดเช็คชื่อ =================
+    function renderAttendanceTable() {
+        const tbody = document.getElementById('studentListBody');
+        tbody.innerHTML = '';
+
+        currentStudents.forEach((student, index) => {
+            const sid = student.StudentId;
+            const tr = document.createElement('tr');
+            
+            // โครงสร้างปุ่มกดแบบง่ายๆ สไตล์ Radio Button ของ Bootstrap
+            tr.innerHTML = `
+                <td>${sid}</td>
+                <td class="fw-bold">${student.FullName}</td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-status" role="group">
+                        <input type="radio" class="btn-check status-radio" name="status_${sid}" id="P_${sid}" value="มา" checked>
+                        <label class="btn btn-outline-success" for="P_${sid}">มา</label>
+
+                        <input type="radio" class="btn-check status-radio" name="status_${sid}" id="A_${sid}" value="ขาด">
+                        <label class="btn btn-outline-danger" for="A_${sid}">ขาด</label>
+
+                        <input type="radio" class="btn-check status-radio" name="status_${sid}" id="L_${sid}" value="ลา">
+                        <label class="btn btn-outline-warning" for="L_${sid}">ลา</label>
+
+                        <input type="radio" class="btn-check status-radio" name="status_${sid}" id="S_${sid}" value="ป่วย">
+                        <label class="btn btn-outline-info" for="S_${sid}">ป่วย</label>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="note-input" id="note_${sid}" placeholder="ใส่หมายเหตุ (ถ้ามี)...">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ================= 3. รวบรวมข้อมูลแล้วส่งไปบันทึก =================
+    function submitAttendance() {
+        const dateValue = document.getElementById('attendanceDate').value;
+        if (!dateValue) {
+            Swal.fire('แจ้งเตือน', 'กรุณาระบุวันที่เช็คชื่อด้วยครับ', 'warning');
+            return;
+        }
+
+        // จัดฟอร์แมตวันที่เป็น DD/MM/YYYY
+        const dDate = dateValue.split('-');
+        const formattedDate = `${dDate[2]}/${dDate[1]}/${parseInt(dDate[0]) + 543}`; // แปลงเป็น พ.ศ.
+
+        let recordsToSave = [];
+
+        // วนลูปอ่านข้อมูลทีละแถว
+        currentStudents.forEach(student => {
+            const sid = student.StudentId;
+            // หาว่าปุ่มไหนถูกกดอยู่ (มา, ขาด, ลา, ป่วย)
+            const statusNode = document.querySelector(`input[name="status_${sid}"]:checked`);
+            const status = statusNode ? statusNode.value : "มา";
+            const note = document.getElementById(`note_${sid}`).value.trim();
+
+            recordsToSave.push({
+                date: formattedDate,
+                studentId: sid,
+                classLevel: student.ClassLevel,
+                room: student.Room || "",
+                status: status,
+                note: note
+            });
+        });
+
+        // ล็อกปุ่มป้องกันกดซ้ำ
+        const btn = document.getElementById('saveBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+        btn.disabled = true;
+
+        // ส่งข้อมูลไปที่ Apps Script (แปลงข้อมูลเป็น String ก่อนส่ง)
+        fetch(scriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=saveAttendance&data=' + encodeURIComponent(JSON.stringify(recordsToSave))
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'บันทึกสำเร็จ!',
+                    text: 'เช็คชื่อนักเรียนลงฐานข้อมูลเรียบร้อยแล้ว',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    // ล้างตารางเตรียมเช็คห้องถัดไป
+                    document.getElementById('attendanceContainer').classList.add('d-none');
+                });
+            } else {
+                Swal.fire('ผิดพลาด', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาลองใหม่อีกครั้ง', 'error');
+            console.error(err);
+        })
+        .finally(() => {
+            // คืนค่าปุ่ม
+            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกการเช็คชื่อ';
+            btn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
