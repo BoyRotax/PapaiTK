@@ -15,22 +15,49 @@
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         
+/* ================= ปรับแต่งตารางหน้าเว็บให้เป็นสไตล์ Minimal ================= */
+        #studentTable {
+            font-size: 85%; /* ลดขนาดตัวอักษรลงจากปกติ */
+        }
+        #studentTable th, #studentTable td {
+            border-left: none !important; /* ลบขอบซ้าย */
+            border-right: none !important; /* ลบขอบขวา */
+            vertical-align: middle;
+        }
+        #studentTable thead th {
+            border-bottom: 2px solid #ccc !important; /* เส้นใต้หัวตารางหนาหน่อย */
+            background-color: #f4f7f6;
+        }
+
         /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น (Smart Print CSS) ================= */
         @media print {
             body { background-color: white; }
-            /* สั่งซ่อนเมนู, กล่องสถิติ, ปุ่มค้นหา, ปุ่มแบ่งหน้า ของ DataTables */
             .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, 
             .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
                 display: none !important; 
             }
-            /* สั่งโชว์เฉพาะข้อความหัวกระดาษที่เราเตรียมไว้ */
             #printHeader { display: block !important; }
-            /* จัด Layout ตารางให้เต็มหน้ากระดาษ */
             .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; padding: 0 !important; }
             .card { border: none !important; box-shadow: none !important; }
-            table { font-size: 14pt; width: 100% !important; border-collapse: collapse !important; }
-            th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
-            /* ซ่อนลิงก์และไอคอนแก้ไข ไม่ให้โผล่ตอนปริ๊น */
+            
+            /* 🌟 ปรับขนาดตัวอักษรตอนปริ๊นให้เล็กลง 30% (จาก 14pt เหลือ 10pt) */
+            table { font-size: 10pt !important; width: 100% !important; border-collapse: collapse !important; }
+            
+            /* 🌟 เอาเส้นขอบตารางออกให้หมด เหลือแค่ขีดเส้นใต้บางๆ กั้นแถว */
+            th, td { 
+                border: none !important; 
+                border-bottom: 1px solid #eeeeee !important; 
+                padding: 6px 8px !important; 
+                color: black !important; 
+            }
+            
+            /* 🌟 บังคับให้สีสลับแถว (Zebra) โชว์ใน PDF ด้วย (ปกติ Chrome จะตัดสีทิ้ง) */
+            tr:nth-child(even) td {
+                background-color: #f9f9f9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
             a { text-decoration: none !important; color: black !important; pointer-events: none; }
             i.fa-edit { display: none !important; }
         }
@@ -129,7 +156,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table id="studentTable" class="table table-hover w-100">
+                    <table id="studentTable" class="table table-striped table-hover table-borderless w-100">
                         <thead class="table-light">
                             <tr>
                                 <th>รหัส</th>
