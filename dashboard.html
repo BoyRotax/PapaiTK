@@ -15,7 +15,19 @@
         .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    </style>
+        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น ================= */
+        @media print {
+            body { background-color: white; }
+            .sidebar, .navbar, .btn, #roomFilterContainer, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
+                display: none !important; 
+            }
+            .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; padding: 0 !important; }
+            .card { border: none !important; box-shadow: none !important; }
+            table { font-size: 14px; width: 100% !important; }
+            th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+            a { text-decoration: none !important; color: black !important; }
+            i.fa-edit { display: none !important; } /* ซ่อนไอคอนแก้ไขตอนปริ๊น */
+        }    </style>
 </head>
 <body>
 
