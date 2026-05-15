@@ -85,6 +85,13 @@
                 </div>
             </div>
 
+            <div id="holidayAlert" class="alert alert-warning d-none text-center shadow-sm border-warning mb-4" style="border-radius: 15px;">
+                <i class="fas fa-umbrella-beach fa-2x mb-2 text-warning"></i>
+                <h4 class="fw-bold">วันนี้เป็นวันหยุด!</h4>
+                <p id="holidayName" class="fs-5 mb-0"></p>
+                <p class="text-muted">ระบบปิดการเช็คชื่อสำหรับวันนี้ครับ</p>
+            </div>
+
             <div id="attendanceContainer" class="card card-stat p-4 d-none">
                 <div class="table-responsive">
                     <table class="table table-hover table-attendance w-100">
@@ -129,7 +136,40 @@
     }
 
     let currentStudents = [];
+// ฟังก์ชันเช็ควันหยุดอัตโนมัติ
+async function checkCurrentDateHoliday() {
+    const dateValue = document.getElementById('attendanceDate').value;
+    const btnFetch = document.querySelector('button[onclick="fetchStudentsForAttendance()"]');
+    const holidayAlert = document.getElementById('holidayAlert');
+    const holidayNameTxt = document.getElementById('holidayName');
+    const attendanceContainer = document.getElementById('attendanceContainer');
 
+    // ล้างสถานะเดิม
+    holidayAlert.classList.add('d-none');
+    btnFetch.disabled = false;
+
+    try {
+        const res = await fetch(`${scriptURL}?action=checkHoliday&date=${dateValue}`);
+        const result = await res.json();
+
+        if (result.isHoliday) {
+            holidayAlert.classList.remove('d-none');
+            holidayNameTxt.innerText = "ชื่อวันหยุด: " + result.name;
+            btnFetch.disabled = true; // ล็อกปุ่มไม่ให้กดดึงรายชื่อ
+            attendanceContainer.classList.add('d-none'); // ซ่อนตารางถ้ามีค้างอยู่
+        }
+    } catch (err) {
+        console.error("เช็ควันหยุดพลาด:", err);
+    }
+}
+
+// เมื่อเปลี่ยนวันที่ ให้เช็ควันหยุดทันที
+document.getElementById('attendanceDate').addEventListener('change', checkCurrentDateHoliday);
+
+// เช็คทันทีตอนเปิดหน้าเว็บ
+$(document).ready(function() {
+    checkCurrentDateHoliday();
+});
     // ================= 1. ดึงรายชื่อตามชั้นและห้อง =================
     function fetchStudentsForAttendance() {
         const selectedClass = document.getElementById('filterClass').value;
