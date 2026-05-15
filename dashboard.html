@@ -211,29 +211,6 @@
                 return getAgeInThai(data); 
             }
         }
-                        // ================= ระบบกรองข้อมูลแยกตามชั้นเรียน =================
-    // หมายเหตุ: โค้ดนี้สมมติว่าคอลัมน์ "ชั้นเรียน" คือคอลัมน์ที่ 4 (index 3) ถ้านับจาก 0
-    $('#roomFilter').on('change', function() {
-        const selectedClass = $(this).val();
-        dataTable.column(3).search(selectedClass).draw();
-    });
-
-    // ================= ระบบสั่งพิมพ์ / เซฟเป็น PDF =================
-    function printTable() {
-        // 1. จำค่าเดิมไว้ก่อนว่าตารางแสดงหน้าละกี่แถว
-        const oldLength = dataTable.page.len();
-        
-        // 2. สั่งกางตารางออกทั้งหมด (-1 คือแสดงทุกแถว) ไม่งั้นตอนปริ๊นจะมาแค่ 10 แถวแรก
-        dataTable.page.len(-1).draw();
-
-        // 3. รอให้คอมพิวเตอร์วาดตารางแป๊บนึง แล้วสั่งเปิดหน้าต่าง Print ของบราวเซอร์
-        setTimeout(function() {
-            window.print();
-            
-            // 4. พอกดปริ๊น (หรือกดยกเลิก) เสร็จ ก็ดึงตารางกลับมาแสดง 10 แถวเหมือนเดิม
-            dataTable.page.len(oldLength).draw();
-        }, 500);
-    }
     ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
@@ -259,6 +236,29 @@
                 document.getElementById('totalTeachers').innerText = data.length;
             })
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
+    }
+                          // ================= ระบบกรองข้อมูลแยกตามชั้นเรียน =================
+    // หมายเหตุ: โค้ดนี้สมมติว่าคอลัมน์ "ชั้นเรียน" คือคอลัมน์ที่ 4 (index 3) ถ้านับจาก 0
+    $('#roomFilter').on('change', function() {
+        const selectedClass = $(this).val();
+        dataTable.column(3).search(selectedClass).draw();
+    });
+
+    // ================= ระบบสั่งพิมพ์ / เซฟเป็น PDF =================
+    function printTable() {
+        // 1. จำค่าเดิมไว้ก่อนว่าตารางแสดงหน้าละกี่แถว
+        const oldLength = dataTable.page.len();
+        
+        // 2. สั่งกางตารางออกทั้งหมด (-1 คือแสดงทุกแถว) ไม่งั้นตอนปริ๊นจะมาแค่ 10 แถวแรก
+        dataTable.page.len(-1).draw();
+
+        // 3. รอให้คอมพิวเตอร์วาดตารางแป๊บนึง แล้วสั่งเปิดหน้าต่าง Print ของบราวเซอร์
+        setTimeout(function() {
+            window.print();
+            
+            // 4. พอกดปริ๊น (หรือกดยกเลิก) เสร็จ ก็ดึงตารางกลับมาแสดง 10 แถวเหมือนเดิม
+            dataTable.page.len(oldLength).draw();
+        }, 500);
     }
 // ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
 function getAgeInThai(birthDateString) {
