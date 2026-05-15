@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง (ป่าไผ่)</title>
-    <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,36 +14,38 @@
         .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-/* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น ================= */
+        
+        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น (Smart Print CSS) ================= */
         @media print {
             body { background-color: white; }
-            /* 🌟 ซ่อนกล่องสถิติและเมนูต่างๆ */
-            .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
+            /* สั่งซ่อนเมนู, กล่องสถิติ, ปุ่มค้นหา, ปุ่มแบ่งหน้า ของ DataTables */
+            .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, 
+            .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
                 display: none !important; 
             }
-            /* 🌟 โชว์หัวกระดาษที่เราเตรียมไว้ */
+            /* สั่งโชว์เฉพาะข้อความหัวกระดาษที่เราเตรียมไว้ */
             #printHeader { display: block !important; }
-            
+            /* จัด Layout ตารางให้เต็มหน้ากระดาษ */
             .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; padding: 0 !important; }
             .card { border: none !important; box-shadow: none !important; }
-            table { font-size: 14px; width: 100% !important; }
-            th, td { border: 1px solid #ddd !important; padding: 8px !important; }
-            a { text-decoration: none !important; color: black !important; }
+            table { font-size: 14pt; width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
+            /* ซ่อนลิงก์และไอคอนแก้ไข ไม่ให้โผล่ตอนปริ๊น */
+            a { text-decoration: none !important; color: black !important; pointer-events: none; }
             i.fa-edit { display: none !important; }
         }
     </style>
 </head>
 <body>
 
-<!-- เช็คสถานะ Login -->
 <script>
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'index.html';
     }
 </script>
+
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="text-center mb-4">
                 <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -54,10 +55,9 @@
             <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
             <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
             <hr class="text-secondary">
-            <a href="#" onclick="sessionStorage.clear(); window.location.href='index.html';" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold"><i class="fas fa-chart-pie"></i> แดชบอร์ดสรุปข้อมูล</h3>
@@ -66,8 +66,7 @@
                 </div>
             </div>
 
-            <!-- กล่องสรุปตัวเลข -->
-            <div class="row mb-4">
+            <div class="row mb-4" id="summaryCards">
                 <div class="col-md-3">
                     <div class="card card-stat bg-primary text-white p-3">
                         <h5>นักเรียนทั้งหมด</h5>
@@ -94,15 +93,13 @@
                 </div>
             </div>
 
-            <!-- ตารางข้อมูล -->
             <div class="card card-stat p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold m-0"><i class="fas fa-list"></i> รายชื่อนักเรียน</h5>
                     <a href="regdata.html" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> เพิ่มนักเรียน</a>
                 </div>
 
-                <!-- 🌟 ส่วนที่เพิ่มใหม่: ตัวกรอง ชั้นเรียน และ ห้อง 🌟 -->
-                <div class="row mb-3 bg-light p-2 rounded">
+                <div class="row mb-3 bg-light p-3 rounded align-items-end" id="roomFilterContainer">
                     <div class="col-md-3">
                         <label class="form-label fw-bold">ระดับชั้น:</label>
                         <select id="filterClass" class="form-select form-select-sm">
@@ -122,29 +119,16 @@
                             <option value="3">ห้อง 3</option>
                         </select>
                     </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-danger fw-bold shadow-sm" onclick="printTable()"><i class="fas fa-file-pdf"></i> บันทึกเป็น PDF / พิมพ์</button>
+                    </div>
+                </div>
+
+                <div id="printHeader" class="text-center mb-4" style="display: none;">
+                    <h3 id="printTitle" class="fw-bold text-dark">รายชื่อนักเรียน</h3>
                 </div>
 
                 <div class="table-responsive">
-                    <div class="row mb-3" id="roomFilterContainer">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-primary text-white"><i class="fas fa-filter"></i></span>
-                        <select id="roomFilter" class="form-select fw-bold">
-                            <option value="">-- แสดงนักเรียนทั้งหมด --</option>
-                            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                            <option value="อนุบาล 1">อนุบาล 1</option>
-                            <option value="อนุบาล 2">อนุบาล 2</option>
-                            <option value="อนุบาล 3">อนุบาล 3</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-8 text-end">
-                    <button class="btn btn-danger fw-bold shadow-sm" onclick="printTable()"><i class="fas fa-file-pdf"></i> บันทึกเป็น PDF / พิมพ์</button>
-                </div>
-            </div>
-                    <div id="printHeader" class="text-center mb-4" style="display: none;">
-    <h3 id="printTitle" class="fw-bold text-dark">รายชื่อนักเรียน</h3>
-</div>
                     <table id="studentTable" class="table table-hover w-100">
                         <thead class="table-light">
                             <tr>
@@ -158,8 +142,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- ข้อมูลจะถูกเติมด้วย JavaScript -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -168,7 +151,6 @@
     </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
@@ -184,7 +166,7 @@
         window.location.href = 'index.html';
     }
 
-    let dataTable; // ประกาศตัวแปรเก็บตารางไว้ด้านนอก
+    let dataTable; // ประกาศตัวแปรเก็บตารางไว้ด้านนอกสุด
 
     function loadDashboardData() {
         // ดึงข้อมูลนักเรียน
@@ -195,7 +177,7 @@
                 document.getElementById('totalMale').innerText = data.filter(s => s.Gender === 'ชาย').length;
                 document.getElementById('totalFemale').innerText = data.filter(s => s.Gender === 'หญิง').length;
 
-                // 🌟 ส่วนที่แก้ไข: สร้างตารางและทำลิงก์ 🌟
+                // สร้างตาราง
                 dataTable = $('#studentTable').DataTable({
                     data: data,
                     columns: [
@@ -203,7 +185,6 @@
                         { 
                             data: 'FullName',
                             render: function(data, type, row) {
-                                // เปลี่ยนชื่อเป็นลิงก์ส่ง ID ไปหน้า regdata.html
                                 return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
                             }
                         },
@@ -211,26 +192,25 @@
                         { data: 'ClassLevel' },
                         { data: 'Room' },
                         { data: 'Gender' },
-                        // 🌟 แก้คอลัมน์อายุให้เป็นแบบนี้ครับ
-        { 
-            data: 'BirthDate',
-            render: function(data, type, row) {
-                // เรียกใช้ฟังก์ชัน getAgeInThai แปลงวันเกิดเป็นอายุ
-                return getAgeInThai(data); 
-            }
-        }
-    ],
+                        { 
+                            data: 'BirthDate',
+                            render: function(data, type, row) {
+                                return getAgeInThai(data); 
+                            }
+                        }
+                    ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
 
-                // 🌟 ผูก Event ให้กับตัวกรอง ชั้นเรียน และ ห้อง 🌟
-                // คอลัมน์ index: 0=ID, 1=ชื่อ, 2=ชื่อเล่น, 3=ชั้นเรียน, 4=ห้อง
+                // ผูก Event ให้กับตัวกรอง ชั้นเรียน และ ห้อง หลังจากที่สร้างตารางเสร็จ
                 $('#filterClass').on('change', function() {
-                    dataTable.column(3).search(this.value).draw();
+                    // ค้นหาคอลัมน์ที่ 3 (ชั้นเรียน) แบบเป๊ะๆ
+                    let val = this.value ? '^' + this.value + '$' : '';
+                    dataTable.column(3).search(val, true, false).draw();
                 });
                 
                 $('#filterRoom').on('change', function() {
-                    // ใช้ Regex เพื่อค้นหาแบบตรงตัว (Exact Match) ป้องกันเลือกห้อง 1 แล้วไปดึงห้อง 10 มาด้วย
+                    // ค้นหาคอลัมน์ที่ 4 (ห้อง) แบบเป๊ะๆ
                     let val = this.value ? '^' + this.value + '$' : '';
                     dataTable.column(4).search(val, true, false).draw();
                 });
@@ -245,112 +225,93 @@
             })
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
     }
-                          // ================= ระบบกรองข้อมูลแยกตามชั้นเรียน =================
-    // หมายเหตุ: โค้ดนี้สมมติว่าคอลัมน์ "ชั้นเรียน" คือคอลัมน์ที่ 4 (index 3) ถ้านับจาก 0
-    $('#roomFilter').on('change', function() {
-        const selectedClass = $(this).val();
-        dataTable.column(3).search(selectedClass).draw();
-    });
 
-   // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print) =================
+    // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print) =================
     function printTable() {
-        // 1. ดึงข้อมูลนักเรียน "ที่กำลังแสดงอยู่บนตารางตอนนี้" (ที่ผ่านการกรองแล้ว)
+        if(!dataTable) return;
+
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
         if(currentData.length === 0) {
             alert("ไม่มีข้อมูลสำหรับพิมพ์");
             return;
         }
 
-        // 2. เช็คว่าข้อมูลชุดนี้มี "ระดับชั้น" และ "ห้อง" อะไรบ้าง
         let uniqueClasses = [...new Set(currentData.map(item => item.ClassLevel))];
         let uniqueRooms = [...new Set(currentData.map(item => item.Room))];
 
-        // 3. สร้างข้อความหัวกระดาษ
         let headerText = "รายชื่อนักเรียน";
-        if (uniqueClasses.length === 1) {
-            headerText += " ระดับชั้น" + uniqueClasses[0]; // ถ้าเลือกชั้นเดียว ให้ต่อท้ายชื่อชั้น
+        if (uniqueClasses.length === 1 && uniqueClasses[0]) {
+            headerText += " ระดับชั้น" + uniqueClasses[0]; 
         }
         
-        // 4. เงื่อนไขซ่อน/โชว์คอลัมน์ห้อง
         let hideRoomColumn = false;
-        // ถ้าข้อมูลที่กรองมา มีแค่ "ห้องเดียว" (หรือค่าว่าง) ไม่ต้องแสดงคอลัมน์ห้อง และไม่ต้องโชว์ในหัวกระดาษ
         if (uniqueRooms.length === 1) {
             hideRoomColumn = true;
         } else if (uniqueClasses.length === 1 && uniqueRooms.length > 1) {
-            // ถ้าเลือกชั้นเดียว แต่มีหลายห้อง (เช่น ยังไม่ได้กดกรองห้อง) ก็ยังแสดงคอลัมน์ห้องอยู่
             headerText += " (รวมทุกห้อง)"; 
         }
 
-        // อัปเดตข้อความหัวกระดาษ
         $('#printTitle').text(headerText);
 
-        // 5. จำค่าเดิมของตารางไว้
         const oldLength = dataTable.page.len();
         
-        // 6. ซ่อนคอลัมน์ "ห้อง" ถ้าเข้าเงื่อนไข 
-        // ⚠️ หมายเหตุ: เลข 4 คือลำดับคอลัมน์ "ห้อง" (นับจาก 0: รหัส=0, ชื่อ=1, ชื่อเล่น=2, ชั้น=3, ห้อง=4)
         if(hideRoomColumn) {
             dataTable.column(4).visible(false);
         }
 
-        // 7. กางตารางออกทุกแถว
         dataTable.page.len(-1).draw(false);
 
-        // 8. สั่งพิมพ์
         setTimeout(function() {
             window.print();
             
-            // 9. พรินต์เสร็จ คืนค่าทุกอย่างกลับเป็นเหมือนเดิม
             dataTable.page.len(oldLength);
             if(hideRoomColumn) {
-                dataTable.column(4).visible(true); // เปิดคอลัมน์ห้องกลับมา
+                dataTable.column(4).visible(true); 
             }
             dataTable.draw(false);
         }, 500);
     }
-// ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
-function getAgeInThai(birthDateString) {
-    if (!birthDateString) return "-";
-    
-    const birthDate = new Date(birthDateString);
-    if (isNaN(birthDate.getTime())) return "-";
 
-    let bYear = birthDate.getFullYear();
-    // 🌟 ดักจับ พ.ศ.: ถ้าปีเกิดมากกว่า 2400 ให้ลบ 543 เพื่อแปลงเป็น ค.ศ.
-    if (bYear > 2400) {
-        bYear -= 543;
+    // ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
+    function getAgeInThai(birthDateString) {
+        if (!birthDateString) return "-";
+        
+        const birthDate = new Date(birthDateString);
+        if (isNaN(birthDate.getTime())) return "-";
+
+        let bYear = birthDate.getFullYear();
+        if (bYear > 2400) {
+            bYear -= 543;
+        }
+
+        const today = new Date();
+        let years = today.getFullYear() - bYear;
+        let months = today.getMonth() - birthDate.getMonth();
+
+        if (today.getDate() < birthDate.getDate()) {
+            months--;
+        }
+        
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+
+        if (years < 0) return "-";
+        if (years === 0 && months === 0) return "ไม่ถึง 1 เดือน";
+
+        let result = "";
+        if (years > 0) result += years + " ขวบ ";
+        if (months > 0) result += months + " เดือน";
+
+        return result.trim();
     }
 
-    const today = new Date();
-    let years = today.getFullYear() - bYear;
-    let months = today.getMonth() - birthDate.getMonth();
-
-    // ถ้าวันปัจจุบัน ยังไม่ถึงวันเกิดในเดือนนี้ ให้ลบเดือนออก 1
-    if (today.getDate() < birthDate.getDate()) {
-        months--;
-    }
-    
-    // ถ้าเดือนติดลบ (ยังไม่ถึงเดือนเกิดในปีนี้) ให้ลบปีออก 1 แล้วทดเดือนบวก 12
-    if (months < 0) {
-        years--;
-        months += 12;
-    }
-
-    // ป้องกันกรณีใส่วันเกิดผิดเป็นอนาคต
-    if (years < 0) return "-";
-
-    if (years === 0 && months === 0) return "ไม่ถึง 1 เดือน";
-
-    let result = "";
-    if (years > 0) result += years + " ขวบ ";
-    if (months > 0) result += months + " เดือน";
-
-    return result.trim();
-}
-
+    // ================= เริ่มทำงานเมื่อโหลดหน้าเว็บเสร็จ =================
     $(document).ready(function() {
         loadDashboardData();
     });
+
 </script>
 </body>
 </html>
