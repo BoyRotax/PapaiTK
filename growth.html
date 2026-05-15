@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกพัฒนาการ - ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #10b981; } /* เปลี่ยนสีแถบเมนูเป็นสีเขียว */
+        .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .number-input { 
+            border-radius: 10px; border: 1px solid #ccc; padding: 8px 15px; 
+            width: 100px; text-align: center; font-weight: bold; color: #1e293b;
+        }
+        .number-input:focus { border-color: #10b981; box-shadow: 0 0 5px rgba(16,185,129,0.5); outline: none; }
+        .table-middle th, .table-middle td { vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'index.html';
+    }
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="growth.html" class="active"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
+            <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            <hr class="text-secondary">
+            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold"><i class="fas fa-child text-success"></i> ระบบบันทึกพัฒนาการ (น้ำหนัก/ส่วนสูง)</h3>
+                <div class="badge bg-success fs-6 p-2 rounded-pill">
+                    <i class="fas fa-user me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
+                </div>
+            </div>
+
+            <div class="card card-stat p-4 mb-4 border-top border-success border-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ประจำเดือน/ปี:</label>
+                        <input type="month" id="monthYearSelect" class="form-control fw-bold">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ระดับชั้น:</label>
+                        <select id="filterClass" class="form-select">
+                            <option value="">-- เลือกระดับชั้น --</option>
+                            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                            <option value="อนุบาล 1">อนุบาล 1</option>
+                            <option value="อนุบาล 2">อนุบาล 2</option>
+                            <option value="อนุบาล 3">อนุบาล 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ห้อง:</label>
+                        <select id="filterRoom" class="form-select">
+                            <option value="">-- เลือกห้อง --</option>
+                            <option value="1">ห้อง 1</option>
+                            <option value="2">ห้อง 2</option>
+                            <option value="3">ห้อง 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-success w-100 fw-bold" onclick="fetchStudentsForGrowth()">
+                            <i class="fas fa-search"></i> ดึงรายชื่อ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="growthContainer" class="card card-stat p-4 d-none">
+                <div class="table-responsive">
+                    <table class="table table-hover table-middle w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th>รหัส</th>
+                                <th>ชื่อ-สกุล</th>
+                                <th class="text-center">น้ำหนัก (กิโลกรัม)</th>
+                                <th class="text-center">ส่วนสูง (เซนติเมตร)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentListBody">
+                            </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-end mt-3">
+                    <button id="saveBtn" class="btn btn-success btn-lg fw-bold px-5" onclick="submitGrowth()">
+                        <i class="fas fa-save"></i> บันทึกข้อมูลพัฒนาการ
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
+
+    document.getElementById('displayUserName').innerText = sessionStorage.getItem('userName') || 'ผู้ดูแลระบบ';
+
+    // เซ็ตเดือน/ปี ปัจจุบันอัตโนมัติ
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    document.getElementById('monthYearSelect').value = `${yyyy}-${mm}`;
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    let currentStudents = [];
+
+    // ================= 1. ดึงรายชื่อเด็ก =================
+    function fetchStudentsForGrowth() {
+        const selectedClass = document.getElementById('filterClass').value;
+        const selectedRoom = document.getElementById('filterRoom').value;
+        const monthYear = document.getElementById('monthYearSelect').value;
+
+        if (!monthYear || !selectedClass) {
+            Swal.fire('แจ้งเตือน', 'กรุณาระบุเดือน/ปี และระดับชั้นให้ครบถ้วนครับ', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'กำลังดึงข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading() }
+        });
+
+        fetch(scriptURL + '?action=getStudents')
+            .then(res => res.json())
+            .then(data => {
+                currentStudents = data.filter(s => s.ClassLevel === selectedClass && (selectedRoom === "" || s.Room === selectedRoom));
+                
+                if (currentStudents.length === 0) {
+                    Swal.fire('ไม่พบข้อมูล', 'ไม่มีรายชื่อนักเรียนในห้องที่เลือกครับ', 'info');
+                    document.getElementById('growthContainer').classList.add('d-none');
+                    return;
+                }
+
+                renderGrowthTable();
+                Swal.close();
+                document.getElementById('growthContainer').classList.remove('d-none');
+            })
+            .catch(err => {
+                Swal.fire('ผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
+                console.error(err);
+            });
+    }
+
+    // ================= 2. สร้างตารางกรอกข้อมูล =================
+    function renderGrowthTable() {
+        const tbody = document.getElementById('studentListBody');
+        tbody.innerHTML = '';
+
+        currentStudents.forEach((student) => {
+            const sid = student.StudentId;
+            const tr = document.createElement('tr');
+            
+            // ใช้ input type="number" step="0.1" เพื่อให้กรอกทศนิยมได้ (เช่น 15.5 กก.)
+            tr.innerHTML = `
+                <td>${sid}</td>
+                <td class="fw-bold text-primary">${student.FullName}</td>
+                <td class="text-center">
+                    <input type="number" step="0.1" class="number-input" id="w_${sid}" placeholder="0.0"> กก.
+                </td>
+                <td class="text-center">
+                    <input type="number" step="0.1" class="number-input" id="h_${sid}" placeholder="0.0"> ซม.
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ================= 3. ส่งข้อมูลไปบันทึก =================
+    function submitGrowth() {
+        const rawMonthYear = document.getElementById('monthYearSelect').value; // จะได้ฟอร์แมต "2026-05"
+        
+        // แปลงฟอร์แมตให้อ่านง่าย เช่น "05/2569" (เผื่อไว้ดูใน Sheet)
+        const parts = rawMonthYear.split('-');
+        const thYear = parseInt(parts[0]) + 543;
+        const prettyMonthYear = `${parts[1]}/${thYear}`;
+
+        let recordsToSave = [];
+
+        currentStudents.forEach(student => {
+            const sid = student.StudentId;
+            const weightVal = document.getElementById(`w_${sid}`).value.trim();
+            const heightVal = document.getElementById(`h_${sid}`).value.trim();
+
+            // จะส่งไปเก็บก็ต่อเมื่อมีการกรอกน้ำหนักหรือส่วนสูง (ถ้าช่องว่างจะไม่เก็บ เพื่อไม่ให้รก Data)
+            if (weightVal !== "" || heightVal !== "") {
+                recordsToSave.push({
+                    monthYear: prettyMonthYear,
+                    studentId: sid,
+                    weight: weightVal,
+                    height: heightVal
+                });
+            }
+        });
+
+        if (recordsToSave.length === 0) {
+            Swal.fire('แจ้งเตือน', 'คุณยังไม่ได้กรอกข้อมูลน้ำหนัก/ส่วนสูงเลยครับ', 'info');
+            return;
+        }
+
+        const btn = document.getElementById('saveBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+        btn.disabled = true;
+
+        fetch(scriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=saveGrowth&data=' + encodeURIComponent(JSON.stringify(recordsToSave))
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "success") {
+                Swal.fire({
+                    icon: 'success', title: 'บันทึกสำเร็จ!', text: 'อัปเดตพัฒนาการเด็กเรียบร้อยแล้ว',
+                    timer: 2000, showConfirmButton: false
+                }).then(() => {
+                    document.getElementById('growthContainer').classList.add('d-none');
+                });
+            } else {
+                Swal.fire('ผิดพลาด', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาลองใหม่อีกครั้ง', 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูลพัฒนาการ';
+            btn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
