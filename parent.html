@@ -21,6 +21,9 @@
         .status-ขาด { color: #ef4444; font-weight: bold; }
         .status-ลา { color: #f59e0b; font-weight: bold; }
         .status-ป่วย { color: #0ea5e9; font-weight: bold; }
+        /* 🌟 ทำให้ตารางเลื่อนขึ้นลงได้ */
+        .table-scrollable { max-height: 350px; overflow-y: auto; }
+        .table-scrollable thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 1; }
     </style>
 </head>
 <body>
@@ -48,34 +51,24 @@
             <div class="card card-info p-4 text-center">
                 <img id="resPhoto" src="https://via.placeholder.com/150?text=No+Image" class="student-photo mx-auto mb-3" alt="รูปนักเรียน">
                 <h4 id="resName" class="fw-bold text-primary mb-1">-</h4>
-                <p class="text-muted mb-2">รหัส: <span id="resId" class="fw-bold text-dark">-</span> | อายุ: <span id="resAge" class="fw-bold text-dark">-</span></p>
-                <div class="badge bg-light text-dark fs-6 p-2 border">
-                    <i class="fas fa-chalkboard text-warning"></i> <span id="resClass">-</span> (ห้อง <span id="resRoom">-</span>)
-                </div>
-            </div>
-
-            <div class="card card-info">
-                <div class="card-header bg-success text-white fw-bold py-3">
-                    <i class="fas fa-child"></i> พัฒนาการล่าสุด (<span id="resMonth">-</span>)
-                </div>
-                <div class="card-body row text-center py-4">
-                    <div class="col-6 border-end">
-                        <h1 id="resWeight" class="text-success fw-bold mb-0">-</h1>
-                        <p class="text-muted mb-0 mt-1">น้ำหนัก (กก.)</p>
+                <p class="text-muted mb-3">รหัส: <span id="resId" class="fw-bold text-dark">-</span> | อายุ: <span id="resAge" class="fw-bold text-dark">-</span></p>
+                
+                <div class="d-flex flex-column align-items-center gap-2">
+                    <div class="badge bg-light text-dark fs-6 p-2 border w-100 rounded-pill">
+                        <i class="fas fa-chalkboard text-warning"></i> <span id="resClass">-</span>
                     </div>
-                    <div class="col-6">
-                        <h1 id="resHeight" class="text-info fw-bold mb-0">-</h1>
-                        <p class="text-muted mb-0 mt-1">ส่วนสูง (ซม.)</p>
+                    <div class="badge bg-light text-primary fs-6 p-2 border w-100 rounded-pill">
+                        <i class="fas fa-chalkboard-teacher text-primary"></i> ครูประจำชั้น: <span id="resTeacher">-</span>
                     </div>
                 </div>
             </div>
 
             <div class="card card-info">
-                <div class="card-header bg-primary text-white fw-bold py-3">
-                    <i class="fas fa-calendar-check"></i> ประวัติการมาเรียน (5 วันล่าสุด)
+                <div class="card-header bg-primary text-white fw-bold py-3 text-center">
+                    <i class="fas fa-calendar-check"></i> ประวัติการมาเรียน (30 วันล่าสุด)
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive table-scrollable">
                         <table class="table table-hover mb-0 text-center">
                             <thead class="table-light">
                                 <tr>
@@ -87,6 +80,22 @@
                             <tbody id="resAttendance">
                                 </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-info">
+                <div class="card-header bg-success text-white fw-bold py-3 text-center">
+                    <i class="fas fa-child"></i> พัฒนาการล่าสุด (<span id="resMonth">-</span>)
+                </div>
+                <div class="card-body row text-center py-4">
+                    <div class="col-6 border-end">
+                        <h1 id="resWeight" class="text-success fw-bold mb-0">-</h1>
+                        <p class="text-muted mb-0 mt-1">น้ำหนัก (กก.)</p>
+                    </div>
+                    <div class="col-6">
+                        <h1 id="resHeight" class="text-info fw-bold mb-0">-</h1>
+                        <p class="text-muted mb-0 mt-1">ส่วนสูง (ซม.)</p>
                     </div>
                 </div>
             </div>
@@ -115,7 +124,6 @@
             btn.disabled = true;
             document.getElementById('resultContainer').classList.add('d-none');
 
-            // ส่งข้อมูลแบบ POST ไปหา getParentPortalData
             fetch(scriptURL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -127,7 +135,7 @@
                     renderData(data);
                     document.getElementById('resultContainer').classList.remove('d-none');
                 } else {
-                    Swal.fire('ไม่พบข้อมูล', data.message, 'error');
+                    Swal.fire('ไม่พบข้อมูล', data.message || data.msg, 'error');
                 }
             })
             .catch(err => {
@@ -140,16 +148,42 @@
         }
 
         function renderData(data) {
-            // 1. ลงข้อมูลนักเรียน
             const stu = data.student;
+            
+            // 1. ข้อมูลส่วนตัว + จัดการเรื่องห้อง
             document.getElementById('resId').innerText = stu.StudentId;
             document.getElementById('resName').innerText = stu.FullName;
-            document.getElementById('resClass').innerText = stu.ClassLevel;
-            document.getElementById('resRoom').innerText = stu.Room;
             document.getElementById('resAge').innerText = stu.Age;
             document.getElementById('resPhoto').src = stu.PhotoUrl || 'https://via.placeholder.com/150?text=No+Photo';
+            
+            // จัดการแสดงผลห้องเรียน
+            let classDisplay = stu.ClassLevel;
+            if (stu.ShowRoom && stu.Room) {
+                classDisplay += ` (ห้อง ${stu.Room})`;
+            }
+            document.getElementById('resClass').innerText = classDisplay;
+            
+            // แสดงชื่อครูประจำชั้น
+            document.getElementById('resTeacher').innerText = stu.Teacher || "ไม่ระบุ";
 
-            // 2. ลงข้อมูลพัฒนาการ
+            // 2. ข้อมูลเช็คชื่อ (ตารางด้านบน)
+            const attBody = document.getElementById('resAttendance');
+            attBody.innerHTML = '';
+            if (data.attendance && data.attendance.length > 0) {
+                data.attendance.forEach(att => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="fw-bold">${att.date}</td>
+                        <td class="status-${att.status}">${att.status}</td>
+                        <td class="text-muted" style="font-size: 14px;">${att.note}</td>
+                    `;
+                    attBody.appendChild(tr);
+                });
+            } else {
+                attBody.innerHTML = '<tr><td colspan="3" class="text-muted py-4">ยังไม่มีประวัติการเช็คชื่อ</td></tr>';
+            }
+
+            // 3. ข้อมูลพัฒนาการ (ด้านล่าง)
             if (data.growth) {
                 document.getElementById('resMonth').innerText = data.growth.monthYear;
                 document.getElementById('resWeight').innerText = data.growth.weight;
@@ -158,23 +192,6 @@
                 document.getElementById('resMonth').innerText = "ยังไม่มีข้อมูล";
                 document.getElementById('resWeight').innerText = "-";
                 document.getElementById('resHeight').innerText = "-";
-            }
-
-            // 3. ลงข้อมูลเช็คชื่อ 5 วันล่าสุด
-            const attBody = document.getElementById('resAttendance');
-            attBody.innerHTML = '';
-            if (data.attendance && data.attendance.length > 0) {
-                data.attendance.forEach(att => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${att.date}</td>
-                        <td class="status-${att.status}">${att.status}</td>
-                        <td class="text-muted" style="font-size: 14px;">${att.note}</td>
-                    `;
-                    attBody.appendChild(tr);
-                });
-            } else {
-                attBody.innerHTML = '<tr><td colspan="3" class="text-muted">ยังไม่มีประวัติการเช็คชื่อ</td></tr>';
             }
         }
     </script>
