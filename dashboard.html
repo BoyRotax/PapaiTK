@@ -15,19 +15,24 @@
         .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น ================= */
+/* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น ================= */
         @media print {
             body { background-color: white; }
-            .sidebar, .navbar, .btn, #roomFilterContainer, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
+            /* 🌟 ซ่อนกล่องสถิติและเมนูต่างๆ */
+            .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length { 
                 display: none !important; 
             }
+            /* 🌟 โชว์หัวกระดาษที่เราเตรียมไว้ */
+            #printHeader { display: block !important; }
+            
             .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; padding: 0 !important; }
             .card { border: none !important; box-shadow: none !important; }
             table { font-size: 14px; width: 100% !important; }
             th, td { border: 1px solid #ddd !important; padding: 8px !important; }
             a { text-decoration: none !important; color: black !important; }
-            i.fa-edit { display: none !important; } /* ซ่อนไอคอนแก้ไขตอนปริ๊น */
-        }    </style>
+            i.fa-edit { display: none !important; }
+        }
+    </style>
 </head>
 <body>
 
@@ -137,6 +142,9 @@
                     <button class="btn btn-danger fw-bold shadow-sm" onclick="printTable()"><i class="fas fa-file-pdf"></i> บันทึกเป็น PDF / พิมพ์</button>
                 </div>
             </div>
+                    <div id="printHeader" class="text-center mb-4" style="display: none;">
+    <h3 id="printTitle" class="fw-bold text-dark">รายชื่อนักเรียน</h3>
+</div>
                     <table id="studentTable" class="table table-hover w-100">
                         <thead class="table-light">
                             <tr>
@@ -244,20 +252,60 @@
         dataTable.column(3).search(selectedClass).draw();
     });
 
-    // ================= ระบบสั่งพิมพ์ / เซฟเป็น PDF =================
+   // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print) =================
     function printTable() {
-        // 1. จำค่าเดิมไว้ก่อนว่าตารางแสดงหน้าละกี่แถว
+        // 1. ดึงข้อมูลนักเรียน "ที่กำลังแสดงอยู่บนตารางตอนนี้" (ที่ผ่านการกรองแล้ว)
+        let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
+        if(currentData.length === 0) {
+            alert("ไม่มีข้อมูลสำหรับพิมพ์");
+            return;
+        }
+
+        // 2. เช็คว่าข้อมูลชุดนี้มี "ระดับชั้น" และ "ห้อง" อะไรบ้าง
+        let uniqueClasses = [...new Set(currentData.map(item => item.ClassLevel))];
+        let uniqueRooms = [...new Set(currentData.map(item => item.Room))];
+
+        // 3. สร้างข้อความหัวกระดาษ
+        let headerText = "รายชื่อนักเรียน";
+        if (uniqueClasses.length === 1) {
+            headerText += " ระดับชั้น" + uniqueClasses[0]; // ถ้าเลือกชั้นเดียว ให้ต่อท้ายชื่อชั้น
+        }
+        
+        // 4. เงื่อนไขซ่อน/โชว์คอลัมน์ห้อง
+        let hideRoomColumn = false;
+        // ถ้าข้อมูลที่กรองมา มีแค่ "ห้องเดียว" (หรือค่าว่าง) ไม่ต้องแสดงคอลัมน์ห้อง และไม่ต้องโชว์ในหัวกระดาษ
+        if (uniqueRooms.length === 1) {
+            hideRoomColumn = true;
+        } else if (uniqueClasses.length === 1 && uniqueRooms.length > 1) {
+            // ถ้าเลือกชั้นเดียว แต่มีหลายห้อง (เช่น ยังไม่ได้กดกรองห้อง) ก็ยังแสดงคอลัมน์ห้องอยู่
+            headerText += " (รวมทุกห้อง)"; 
+        }
+
+        // อัปเดตข้อความหัวกระดาษ
+        $('#printTitle').text(headerText);
+
+        // 5. จำค่าเดิมของตารางไว้
         const oldLength = dataTable.page.len();
         
-        // 2. สั่งกางตารางออกทั้งหมด (-1 คือแสดงทุกแถว) ไม่งั้นตอนปริ๊นจะมาแค่ 10 แถวแรก
-        dataTable.page.len(-1).draw();
+        // 6. ซ่อนคอลัมน์ "ห้อง" ถ้าเข้าเงื่อนไข 
+        // ⚠️ หมายเหตุ: เลข 4 คือลำดับคอลัมน์ "ห้อง" (นับจาก 0: รหัส=0, ชื่อ=1, ชื่อเล่น=2, ชั้น=3, ห้อง=4)
+        if(hideRoomColumn) {
+            dataTable.column(4).visible(false);
+        }
 
-        // 3. รอให้คอมพิวเตอร์วาดตารางแป๊บนึง แล้วสั่งเปิดหน้าต่าง Print ของบราวเซอร์
+        // 7. กางตารางออกทุกแถว
+        dataTable.page.len(-1).draw(false);
+
+        // 8. สั่งพิมพ์
         setTimeout(function() {
             window.print();
             
-            // 4. พอกดปริ๊น (หรือกดยกเลิก) เสร็จ ก็ดึงตารางกลับมาแสดง 10 แถวเหมือนเดิม
-            dataTable.page.len(oldLength).draw();
+            // 9. พรินต์เสร็จ คืนค่าทุกอย่างกลับเป็นเหมือนเดิม
+            dataTable.page.len(oldLength);
+            if(hideRoomColumn) {
+                dataTable.column(4).visible(true); // เปิดคอลัมน์ห้องกลับมา
+            }
+            dataTable.draw(false);
         }, 500);
     }
 // ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
