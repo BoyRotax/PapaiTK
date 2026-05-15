@@ -208,23 +208,36 @@
             })
             .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
     }
-    // ================= ระบบคำนวณอายุเด็ก (ขวบ/เดือน) =================
+// ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
 function getAgeInThai(birthDateString) {
     if (!birthDateString) return "-";
+    
     const birthDate = new Date(birthDateString);
     if (isNaN(birthDate.getTime())) return "-";
 
+    let bYear = birthDate.getFullYear();
+    // 🌟 ดักจับ พ.ศ.: ถ้าปีเกิดมากกว่า 2400 ให้ลบ 543 เพื่อแปลงเป็น ค.ศ.
+    if (bYear > 2400) {
+        bYear -= 543;
+    }
+
     const today = new Date();
-    let years = today.getFullYear() - birthDate.getFullYear();
+    let years = today.getFullYear() - bYear;
     let months = today.getMonth() - birthDate.getMonth();
 
+    // ถ้าวันปัจจุบัน ยังไม่ถึงวันเกิดในเดือนนี้ ให้ลบเดือนออก 1
     if (today.getDate() < birthDate.getDate()) {
         months--;
     }
+    
+    // ถ้าเดือนติดลบ (ยังไม่ถึงเดือนเกิดในปีนี้) ให้ลบปีออก 1 แล้วทดเดือนบวก 12
     if (months < 0) {
         years--;
         months += 12;
     }
+
+    // ป้องกันกรณีใส่วันเกิดผิดเป็นอนาคต
+    if (years < 0) return "-";
 
     if (years === 0 && months === 0) return "ไม่ถึง 1 เดือน";
 
