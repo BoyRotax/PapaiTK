@@ -11,7 +11,7 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
         .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
         .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
-        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #3b82f6; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         
         /* ตกแต่งตารางเช็คชื่อ */
@@ -25,7 +25,7 @@
 
 <script>
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     }
 </script>
 
@@ -95,12 +95,12 @@
 
             <div id="attendanceContainer" class="card card-stat p-4 d-none">
                 <div class="table-responsive">
-                    <table class="table table-hover table-attendance w-100">
+                    <table class="table table-hover table-attendance w-100 text-center">
                         <thead class="table-light">
                             <tr>
                                 <th>รหัส</th>
-                                <th>ชื่อ-สกุล</th>
-                                <th class="text-center">สถานะ (คลิกเพื่อเปลี่ยน)</th>
+                                <th class="text-start">ชื่อ-สกุล</th>
+                                <th>ชื่อเล่น</th> <th>สถานะ (คลิกเพื่อเปลี่ยน)</th>
                                 <th>หมายเหตุ</th>
                             </tr>
                         </thead>
@@ -122,55 +122,22 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
     // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
 
     document.getElementById('displayUserName').innerText = sessionStorage.getItem('userName') || 'ผู้ดูแลระบบ';
-
-    // เซ็ตวันที่เริ่มต้นเป็น "วันนี้" อัตโนมัติ
     document.getElementById('attendanceDate').valueAsDate = new Date();
 
     function logout() {
         sessionStorage.clear();
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     }
 
     let currentStudents = [];
-// ฟังก์ชันเช็ควันหยุดอัตโนมัติ
-async function checkCurrentDateHoliday() {
-    const dateValue = document.getElementById('attendanceDate').value;
-    const btnFetch = document.querySelector('button[onclick="fetchStudentsForAttendance()"]');
-    const holidayAlert = document.getElementById('holidayAlert');
-    const holidayNameTxt = document.getElementById('holidayName');
-    const attendanceContainer = document.getElementById('attendanceContainer');
 
-    // ล้างสถานะเดิม
-    holidayAlert.classList.add('d-none');
-    btnFetch.disabled = false;
-
-    try {
-        const res = await fetch(`${scriptURL}?action=checkHoliday&date=${dateValue}`);
-        const result = await res.json();
-
-        if (result.isHoliday) {
-            holidayAlert.classList.remove('d-none');
-            holidayNameTxt.innerText = "ชื่อวันหยุด: " + result.name;
-            btnFetch.disabled = true; // ล็อกปุ่มไม่ให้กดดึงรายชื่อ
-            attendanceContainer.classList.add('d-none'); // ซ่อนตารางถ้ามีค้างอยู่
-        }
-    } catch (err) {
-        console.error("เช็ควันหยุดพลาด:", err);
-    }
-}
-
-// เมื่อเปลี่ยนวันที่ ให้เช็ควันหยุดทันที
-document.getElementById('attendanceDate').addEventListener('change', checkCurrentDateHoliday);
-
-// เช็คทันทีตอนเปิดหน้าเว็บ
-$(document).ready(function() {
-    checkCurrentDateHoliday();
-});
     // ================= 1. ดึงรายชื่อตามชั้นและห้อง =================
     function fetchStudentsForAttendance() {
         const selectedClass = document.getElementById('filterClass').value;
@@ -190,8 +157,12 @@ $(document).ready(function() {
         fetch(scriptURL + '?action=getStudents')
             .then(res => res.json())
             .then(data => {
-                // กรองเด็กตามชั้นและห้องที่เลือก
-                currentStudents = data.filter(s => s.ClassLevel === selectedClass && (selectedRoom === "" || s.Room === selectedRoom));
+                // 🌟 แก้บัคค้นหาห้อง: บังคับแปลงเป็น String ให้หมดก่อนเทียบกัน
+                currentStudents = data.filter(s => {
+                    const matchClass = s.ClassLevel === selectedClass;
+                    const matchRoom = selectedRoom === "" || String(s.Room).trim() === String(selectedRoom).trim();
+                    return matchClass && matchRoom;
+                });
                 
                 if (currentStudents.length === 0) {
                     Swal.fire('ไม่พบข้อมูล', 'ไม่มีรายชื่อนักเรียนในห้องที่เลือกครับ', 'info');
@@ -214,15 +185,16 @@ $(document).ready(function() {
         const tbody = document.getElementById('studentListBody');
         tbody.innerHTML = '';
 
-        currentStudents.forEach((student, index) => {
+        currentStudents.forEach((student) => {
             const sid = student.StudentId;
             const tr = document.createElement('tr');
             
-            // โครงสร้างปุ่มกดแบบง่ายๆ สไตล์ Radio Button ของ Bootstrap
+            // 🌟 เพิ่มคอลัมน์ชื่อเล่นเข้ามาในตาราง
             tr.innerHTML = `
                 <td>${sid}</td>
-                <td class="fw-bold">${student.FullName}</td>
-                <td class="text-center">
+                <td class="text-start fw-bold">${student.FullName}</td>
+                <td class="text-primary fw-bold">${student.NickName || '-'}</td>
+                <td>
                     <div class="btn-group btn-group-status" role="group">
                         <input type="radio" class="btn-check status-radio" name="status_${sid}" id="P_${sid}" value="มา" checked>
                         <label class="btn btn-outline-success" for="P_${sid}">มา</label>
@@ -253,16 +225,13 @@ $(document).ready(function() {
             return;
         }
 
-        // จัดฟอร์แมตวันที่เป็น DD/MM/YYYY
         const dDate = dateValue.split('-');
-        const formattedDate = `${dDate[2]}/${dDate[1]}/${parseInt(dDate[0]) + 543}`; // แปลงเป็น พ.ศ.
+        const formattedDate = `${dDate[2]}/${dDate[1]}/${parseInt(dDate[0]) + 543}`; 
 
         let recordsToSave = [];
 
-        // วนลูปอ่านข้อมูลทีละแถว
         currentStudents.forEach(student => {
             const sid = student.StudentId;
-            // หาว่าปุ่มไหนถูกกดอยู่ (มา, ขาด, ลา, ป่วย)
             const statusNode = document.querySelector(`input[name="status_${sid}"]:checked`);
             const status = statusNode ? statusNode.value : "มา";
             const note = document.getElementById(`note_${sid}`).value.trim();
@@ -277,12 +246,10 @@ $(document).ready(function() {
             });
         });
 
-        // ล็อกปุ่มป้องกันกดซ้ำ
         const btn = document.getElementById('saveBtn');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
         btn.disabled = true;
 
-        // ส่งข้อมูลไปที่ Apps Script (แปลงข้อมูลเป็น String ก่อนส่ง)
         fetch(scriptURL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -298,7 +265,6 @@ $(document).ready(function() {
                     timer: 2000,
                     showConfirmButton: false
                 }).then(() => {
-                    // ล้างตารางเตรียมเช็คห้องถัดไป
                     document.getElementById('attendanceContainer').classList.add('d-none');
                 });
             } else {
@@ -307,14 +273,42 @@ $(document).ready(function() {
         })
         .catch(err => {
             Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาลองใหม่อีกครั้ง', 'error');
-            console.error(err);
         })
         .finally(() => {
-            // คืนค่าปุ่ม
             btn.innerHTML = '<i class="fas fa-save"></i> บันทึกการเช็คชื่อ';
             btn.disabled = false;
         });
     }
+
+    // ================= 4. ระบบเช็ควันหยุด =================
+    async function checkCurrentDateHoliday() {
+        const dateValue = document.getElementById('attendanceDate').value;
+        const btnFetch = document.querySelector('button[onclick="fetchStudentsForAttendance()"]');
+        const holidayAlert = document.getElementById('holidayAlert');
+        const holidayNameTxt = document.getElementById('holidayName');
+        const attendanceContainer = document.getElementById('attendanceContainer');
+
+        holidayAlert.classList.add('d-none');
+        btnFetch.disabled = false;
+
+        try {
+            const res = await fetch(`${scriptURL}?action=checkHoliday&date=${dateValue}`);
+            const result = await res.json();
+
+            if (result.isHoliday) {
+                holidayAlert.classList.remove('d-none');
+                holidayNameTxt.innerText = "ชื่อวันหยุด: " + result.name;
+                btnFetch.disabled = true; 
+                attendanceContainer.classList.add('d-none'); 
+            }
+        } catch (err) {
+            console.error("เช็ควันหยุดพลาด:", err);
+        }
+    }
+
+    document.getElementById('attendanceDate').addEventListener('change', checkCurrentDateHoliday);
+    $(document).ready(function() { checkCurrentDateHoliday(); });
+
 </script>
 </body>
 </html>
