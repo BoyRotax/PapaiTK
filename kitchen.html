@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Dashboard - ระบบสรุปยอดอาหาร</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; color: #1c1e21; }
+        .kitchen-header { background: linear-gradient(135deg, #f97316 0%, #ed64a6 100%); color: white; padding: 25px 0; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3); }
+        .total-card { background: white; border-radius: 25px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: -30px; }
+        .grand-total { font-size: 100px; font-weight: 800; color: #f97316; line-height: 1; }
+        .class-card { border-radius: 20px; border: none; transition: transform 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .class-card:hover { transform: scale(1.02); }
+        .present-count { font-size: 60px; font-weight: 700; color: #10b981; }
+        .total-label { font-size: 20px; color: #64748b; }
+        .status-badge { font-size: 14px; border-radius: 50px; padding: 5px 15px; }
+        .bg-waiting { background-color: #fef3c7; color: #92400e; }
+        .bg-done { background-color: #d1fae5; color: #065f46; }
+        .refresh-btn { position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px; border-radius: 50%; font-size: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="kitchen-header text-center">
+    <h1 class="fw-bold"><i class="fas fa-utensils me-3"></i> ระบบเตรียมอาหารประจำวัน</h1>
+    <p class="fs-5 opacity-75">ศพด. ทับกวาง (ป่าไผ่) | วันที่: <span id="currentDate">-</span></p>
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card total-card p-4 text-center">
+                <h4 class="fw-bold text-muted mb-3">ยอดรวมนักเรียนที่มาเรียนวันนี้</h4>
+                <div class="grand-total" id="grandTotal">0</div>
+                <h2 class="fw-bold text-dark mt-2">ชุดอาหาร</h2>
+                <p class="text-muted mt-2"><i class="fas fa-sync-alt fa-spin me-2"></i> อัปเดตข้อมูลอัตโนมัติทุก 1 นาที</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-4" id="classBreakdown">
+        </div>
+</div>
+
+<button class="btn btn-warning refresh-btn text-white" onclick="fetchKitchenData()">
+    <i class="fas fa-redo-alt"></i>
+</button>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
+
+    function fetchKitchenData() {
+        const grandTotalElem = document.getElementById('grandTotal');
+        const breakdownElem = document.getElementById('classBreakdown');
+        const dateElem = document.getElementById('currentDate');
+
+        fetch(scriptURL + '?action=getKitchenData')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    dateElem.innerText = data.date;
+                    let grandTotal = 0;
+                    breakdownElem.innerHTML = '';
+
+                    // วนลูปสร้างการ์ดรายห้อง
+                    for (const [className, info] of Object.entries(data.summary)) {
+                        grandTotal += info.present;
+                        
+                        const statusClass = info.checked ? 'bg-done' : 'bg-waiting';
+                        const statusText = info.checked ? '<i class="fas fa-check-circle me-1"></i> เช็คชื่อแล้ว' : '<i class="fas fa-clock me-1"></i> รอข้อมูล...';
+
+                        breakdownElem.innerHTML += `
+                            <div class="col-md-4">
+                                <div class="card class-card p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5 class="fw-bold text-dark mb-0">${className}</h5>
+                                        <span class="status-badge ${statusClass}">${statusText}</span>
+                                    </div>
+                                    <div class="d-flex align-items-baseline">
+                                        <span class="present-count">${info.present}</span>
+                                        <span class="total-label ms-2">/ ${info.total} คน</span>
+                                    </div>
+                                    <div class="progress mt-3" style="height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: ${(info.present/info.total)*100}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    grandTotalElem.innerText = grandTotal;
+                }
+            })
+            .catch(err => console.error("Error fetching kitchen data:", err));
+    }
+
+    // รันครั้งแรกตอนเปิดหน้าเว็บ
+    fetchKitchenData();
+
+    // ตั้งเวลาให้รีเฟรชตัวเองอัตโนมัติทุก 60 วินาที (1 นาที)
+    setInterval(fetchKitchenData, 60000);
+</script>
+</body>
+</html>
