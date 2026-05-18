@@ -36,7 +36,7 @@
                 <h4 class="fw-bold text-muted mb-3">ยอดรวมนักเรียนที่มาเรียนวันนี้</h4>
                 <div class="grand-total" id="grandTotal">0</div>
                 <h2 class="fw-bold text-dark mt-2">ชุดอาหาร</h2>
-                <p class="text-muted mt-2"><i class="fas fa-sync-alt fa-spin me-2"></i> อัปเดตข้อมูลอัตโนมัติทุก 1 นาที</p>
+                <p class="text-muted mt-2" id="refreshStatus"><i class="fas fa-spinner fa-spin me-2"></i> กำลังตรวจสอบเวลาระบบ...</p>
             </div>
         </div>
     </div>
@@ -52,7 +52,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
 
     function fetchKitchenData() {
         const grandTotalElem = document.getElementById('grandTotal');
@@ -67,7 +67,6 @@
                     let grandTotal = 0;
                     breakdownElem.innerHTML = '';
 
-                    // วนลูปสร้างการ์ดรายห้อง
                     for (const [className, info] of Object.entries(data.summary)) {
                         grandTotal += info.present;
                         
@@ -98,11 +97,35 @@
             .catch(err => console.error("Error fetching kitchen data:", err));
     }
 
-    // รันครั้งแรกตอนเปิดหน้าเว็บ
+    // 🌟 ฟังก์ชันระบบคิดวิเคราะห์เวลาอัจฉริยะ (Smart Scheduler)
+    function checkTimeAndAutoRefresh() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        
+        // แปลงเวลาปัจจุบันเป็นจำนวน "นาที" เพื่อให้คำนวณง่าย
+        const currentMinutes = (hours * 60) + minutes;
+        
+        const startMinutes = (7 * 60) + 45; // 07:45 น.
+        const endMinutes = (11 * 60) + 0;   // 11:00 น.
+
+        const statusElem = document.getElementById('refreshStatus');
+
+        // ถ้าเวลาอยู่ในช่วง 07:45 - 11:00 น.
+        if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+            fetchKitchenData(); // สั่งรีเฟรชข้อมูล
+            statusElem.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-sync-alt fa-spin me-2"></i> ระบบกำลังอัปเดตยอดอัตโนมัติประจำเช้านี้ (07:45 - 11:00)</span>';
+        } else {
+            // ถ้านอกเวลา ปล่อยยอดค้างไว้ และขึ้นป้ายบอกระบบพักผ่อน
+            statusElem.innerHTML = '<span class="text-muted"><i class="fas fa-moon me-2"></i> นอกเวลาเตรียมอาหาร (ระบบหยุดออโต้รีเฟรชเพื่อประหยัดพลังงาน)</span>';
+        }
+    }
+
+    // 1. เปิดเว็บมาปุ๊บ ให้ดึงข้อมูลทันที 1 ครั้ง (เผื่อเข้ามาดูย้อนหลังตอนบ่าย)
     fetchKitchenData();
 
-    // ตั้งเวลาให้รีเฟรชตัวเองอัตโนมัติทุก 60 วินาที (1 นาที)
-    setInterval(fetchKitchenData, 60000);
+    // 2. สั่งให้ระบบเช็คเวลาและทำออ้โตรีเฟรช "ทุกๆ 1 นาที" (60000 มิลลิวินาที)
+    setInterval(checkTimeAndAutoRefresh, 60000);
 </script>
 </body>
 </html>
