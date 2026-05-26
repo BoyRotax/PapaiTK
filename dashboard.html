@@ -15,21 +15,14 @@
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         
-/* ================= ปรับแต่งตารางหน้าเว็บให้เป็นสไตล์ Minimal ================= */
-        #studentTable {
-            font-size: 85%; /* ลดขนาดตัวอักษรลงจากปกติ */
-        }
+        #studentTable { font-size: 85%; }
         #studentTable th, #studentTable td {
-            border-left: none !important; /* ลบขอบซ้าย */
-            border-right: none !important; /* ลบขอบขวา */
-            vertical-align: middle;
+            border-left: none !important; border-right: none !important; vertical-align: middle;
         }
         #studentTable thead th {
-            border-bottom: 2px solid #ccc !important; /* เส้นใต้หัวตารางหนาหน่อย */
-            background-color: #f4f7f6;
+            border-bottom: 2px solid #ccc !important; background-color: #f4f7f6;
         }
 
-        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น (Smart Print CSS) ================= */
         @media print {
             body { background-color: white; }
             .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, 
@@ -39,25 +32,11 @@
             #printHeader { display: block !important; }
             .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; padding: 0 !important; }
             .card { border: none !important; box-shadow: none !important; }
-            
-            /* 🌟 ปรับขนาดตัวอักษรตอนปริ๊นให้เล็กลง 30% (จาก 14pt เหลือ 10pt) */
             table { font-size: 10pt !important; width: 100% !important; border-collapse: collapse !important; }
-            
-            /* 🌟 เอาเส้นขอบตารางออกให้หมด เหลือแค่ขีดเส้นใต้บางๆ กั้นแถว */
-            th, td { 
-                border: none !important; 
-                border-bottom: 1px solid #eeeeee !important; 
-                padding: 6px 8px !important; 
-                color: black !important; 
-            }
-            
-            /* 🌟 บังคับให้สีสลับแถว (Zebra) โชว์ใน PDF ด้วย (ปกติ Chrome จะตัดสีทิ้ง) */
+            th, td { border: none !important; border-bottom: 1px solid #eeeeee !important; padding: 6px 8px !important; color: black !important; }
             tr:nth-child(even) td {
-                background-color: #f9f9f9 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                background-color: #f9f9f9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
-            
             a { text-decoration: none !important; color: black !important; pointer-events: none; }
             i.fa-edit { display: none !important; }
         }
@@ -79,10 +58,11 @@
                 <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
             </div>
             <a href="dashboard.html" class="active"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
-            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
-            <a href="growth.html"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
-            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> เพิ่มข้อมูลนักเรียน</a>
-            <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            <a href="attendance.html" id="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="growth.html" id="menu-growth"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <a href="regdata.html" id="menu-reg"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
+            <a href="kitchen.html" id="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
+            <a href="teachers.html" id="menu-teacher"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
             <hr class="text-secondary">
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
@@ -91,33 +71,29 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold"><i class="fas fa-chart-pie"></i> แดชบอร์ดสรุปข้อมูล</h3>
                 <div class="badge bg-primary fs-6 p-2 rounded-pill">
-                    <i class="fas fa-user me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
+                    <i class="fas fa-user-shield me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
                 </div>
             </div>
 
             <div class="row mb-4" id="summaryCards">
                 <div class="col-md-3">
                     <div class="card card-stat bg-primary text-white p-3">
-                        <h5>นักเรียนทั้งหมด</h5>
-                        <h2 id="totalStudents">0</h2>
+                        <h5>นักเรียนทั้งหมด</h5><h2 id="totalStudents">0</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card card-stat bg-info text-white p-3">
-                        <h5>นักเรียนชาย</h5>
-                        <h2 id="totalMale">0</h2>
+                        <h5>นักเรียนชาย</h5><h2 id="totalMale">0</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card card-stat bg-danger text-white p-3">
-                        <h5>นักเรียนหญิง</h5>
-                        <h2 id="totalFemale">0</h2>
+                        <h5>นักเรียนหญิง</h5><h2 id="totalFemale">0</h2>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card card-stat bg-success text-white p-3">
-                        <h5>จำนวนครู</h5>
-                        <h2 id="totalTeachers">0</h2>
+                        <h5>จำนวนครู</h5><h2 id="totalTeachers">0</h2>
                     </div>
                 </div>
             </div>
@@ -125,7 +101,7 @@
             <div class="card card-stat p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold m-0"><i class="fas fa-list"></i> รายชื่อนักเรียน</h5>
-                    <a href="regdata.html" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> เพิ่มนักเรียน</a>
+                    <a href="regdata.html" id="btnAddStudent" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> เพิ่มนักเรียน</a>
                 </div>
 
                 <div class="row mb-3 bg-light p-3 rounded align-items-end" id="roomFilterContainer">
@@ -162,20 +138,19 @@
                         <thead class="table-light">
                             <tr>
                                 <th>รหัส</th>
-                                <th>ชื่อ-สกุล (คลิกเพื่อแก้ไข)</th>
+                                <th>ชื่อ-สกุล</th>
                                 <th>ชื่อเล่น</th>
                                 <th>ชั้นเรียน</th>
                                 <th>ห้อง</th>
                                 <th>เพศ</th>
-                                <th>ว/ด/ป เกิด</th> <th>อายุ</th>
+                                <th>ว/ด/ป เกิด</th> 
+                                <th>อายุ</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -186,19 +161,39 @@
 
 <script>
     // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
 
-    document.getElementById('displayUserName').innerText = sessionStorage.getItem('userName') || 'ผู้ดูแลระบบ';
+    // 🌟 ดึงข้อมูลส่วนตัวและสิทธิ์จาก Session
+    const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
+    const userRole = sessionStorage.getItem('userRole') || 'Support'; // ถ้าไม่มีสิทธิ์ ให้เป็นระดับต่ำสุด
+    
+    // โชว์ชื่อและตำแหน่งมุมขวาบน
+    let roleThai = "ผู้ดูแลระบบ";
+    if(userRole === 'Teacher') roleThai = "ครูประจำชั้น";
+    if(userRole === 'Clerk') roleThai = "ธุรการ";
+    if(userRole === 'Support') roleThai = "เจ้าหน้าที่ทั่วไป";
+    document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
 
     function logout() {
         sessionStorage.clear();
         window.location.href = 'index.html';
     }
 
-    let dataTable; // ประกาศตัวแปรเก็บตารางไว้ด้านนอกสุด
+    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
+    function applyAccessRights() {
+        if (userRole === 'Teacher') {
+            $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide();
+        } else if (userRole === 'Clerk') {
+            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide();
+        } else if (userRole === 'Support') {
+            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #btnAddStudent').hide();
+        }
+        // ถ้าเป็น Admin ไม่ต้องซ่อนอะไรเลย โชว์หมด!
+    }
+
+    let dataTable; 
 
     function loadDashboardData() {
-        // ดึงข้อมูลนักเรียน
         fetch(scriptURL + '?action=getStudents')
             .then(res => res.json())
             .then(data => {
@@ -206,7 +201,6 @@
                 document.getElementById('totalMale').innerText = data.filter(s => s.Gender === 'ชาย').length;
                 document.getElementById('totalFemale').innerText = data.filter(s => s.Gender === 'หญิง').length;
 
-// ================= สร้างตาราง DataTables =================
                 dataTable = $('#studentTable').DataTable({
                     data: data,
                     columns: [
@@ -214,134 +208,109 @@
                         { 
                             data: 'FullName',
                             render: function(data, type, row) {
-                                return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
+                                // 🌟 ถ้าเป็น Admin หรือ ธุรการ ให้คลิกแก้ชื่อได้ ถ้าไม่ใช่ให้โชว์ข้อความเฉยๆ
+                                if (userRole === 'Admin' || userRole === 'Clerk') {
+                                    return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
+                                } else {
+                                    return `<span class="fw-bold">${data}</span>`;
+                                }
                             }
                         },
                         { data: 'NickName' },
-                        { data: 'ClassLevel' }, // Index 3
-                        { data: 'Room' },       // Index 4
+                        { data: 'ClassLevel' },
+                        { data: 'Room' },       
                         { data: 'Gender' },
                         { 
-                            data: 'BirthDate',  // Index 6 (ว/ด/ป เกิด)
+                            data: 'BirthDate',  
                             render: function(data) { return formatThaiDate(data); }
                         },
                         { 
-                            data: 'BirthDate',  // Index 7 (อายุ)
+                            data: 'BirthDate',  
                             render: function(data) { return getAgeInThai(data); }
                         }
                     ],
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
                 });
 
-                // ================= ผูก Event Dropdown (กรองปุ๊บ ซ่อนคอลัมน์ปั๊บ) =================
                 $('#filterClass').on('change', function() {
                     let val = this.value ? '^' + this.value + '$' : '';
                     dataTable.column(3).search(val, true, false).draw();
-                    
-                    // 🌟 ถ้าเลือกชั้นเรียน ให้ซ่อนคอลัมน์ "ชั้นเรียน" (Index 3)
                     dataTable.column(3).visible(this.value ? false : true);
                 });
                 
                 $('#filterRoom').on('change', function() {
                     let val = this.value ? '^' + this.value + '$' : '';
                     dataTable.column(4).search(val, true, false).draw();
-                    
-                    // 🌟 ถ้าเลือกห้อง ให้ซ่อนคอลัมน์ "ห้อง" (Index 4)
                     dataTable.column(4).visible(this.value ? false : true);
                 });
             })
             .catch(err => console.error("โหลดข้อมูลนักเรียนไม่สำเร็จ:", err));
 
-        // ดึงข้อมูลครู
         fetch(scriptURL + '?action=getTeachers')
             .then(res => res.json())
             .then(data => {
                 document.getElementById('totalTeachers').innerText = data.length;
-            })
-            .catch(err => console.error("โหลดข้อมูลครูไม่สำเร็จ:", err));
+            });
     }
 
-    // ================= ระบบสั่งพิมพ์อัจฉริยะ (Smart Print V.2) =================
     function printTable() {
         if(!dataTable) return;
-
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
-        if(currentData.length === 0) {
-            alert("ไม่มีข้อมูลสำหรับพิมพ์");
-            return;
-        }
+        if(currentData.length === 0) { alert("ไม่มีข้อมูลสำหรับพิมพ์"); return; }
 
         let uniqueClasses = [...new Set(currentData.map(item => item.ClassLevel))];
         let uniqueRooms = [...new Set(currentData.map(item => item.Room))];
 
         let headerText = "รายชื่อนักเรียน";
-        if (uniqueClasses.length === 1 && uniqueClasses[0]) {
-            headerText += " ระดับชั้น" + uniqueClasses[0]; 
-        }
-        if (uniqueClasses.length === 1 && uniqueRooms.length > 1) {
-            headerText += " (รวมทุกห้อง)"; 
-        }
+        if (uniqueClasses.length === 1 && uniqueClasses[0]) headerText += " ระดับชั้น" + uniqueClasses[0]; 
+        if (uniqueClasses.length === 1 && uniqueRooms.length > 1) headerText += " (รวมทุกห้อง)"; 
         $('#printTitle').text(headerText);
 
-        // จำสถานะว่าตอนนี้ตารางโชว์หน้าละกี่แถว และซ่อนคอลัมน์ไหนไว้บ้าง
         const oldLength = dataTable.page.len();
         const oldClassVis = dataTable.column(3).visible();
         const oldRoomVis = dataTable.column(4).visible();
         
-        // ถ้าข้อมูลมีแค่ชั้นเดียว/ห้องเดียว ให้บังคับซ่อนตอนปริ๊น
         if(uniqueClasses.length === 1) dataTable.column(3).visible(false);
         if(uniqueRooms.length === 1) dataTable.column(4).visible(false);
 
-        // กางตารางออกทุกแถวเพื่อเตรียมปริ๊น
         dataTable.page.len(-1).draw(false);
 
         setTimeout(function() {
             window.print();
-            
-            // ปริ๊นเสร็จ คืนร่างกลับเป็นเหมือนเดิมเป๊ะๆ
             dataTable.page.len(oldLength);
             dataTable.column(3).visible(oldClassVis); 
             dataTable.column(4).visible(oldRoomVis); 
             dataTable.draw(false);
         }, 500);
     }
-    // ================= ระบบจัดฟอร์แมตวันที่ (DD/MM/YYYY) =================
+
     function formatThaiDate(dateString) {
         if (!dateString) return "-";
         const d = new Date(dateString);
-        if (isNaN(d.getTime())) return dateString; // ถ้าไม่ใช่วันที่ ให้แสดงข้อความเดิม
+        if (isNaN(d.getTime())) return dateString; 
         
         let dDate = d.getDate().toString().padStart(2, '0');
         let mMonth = (d.getMonth() + 1).toString().padStart(2, '0');
         let yYear = d.getFullYear();
-        if (yYear < 2400) yYear += 543; // แปลง ค.ศ. เป็น พ.ศ.
+        if (yYear < 2400) yYear += 543; 
         
         return `${dDate}/${mMonth}/${yYear}`;
     }
-    // ================= ระบบคำนวณอายุเด็ก (รองรับ พ.ศ. อัตโนมัติ) =================
+
     function getAgeInThai(birthDateString) {
         if (!birthDateString) return "-";
-        
         const birthDate = new Date(birthDateString);
         if (isNaN(birthDate.getTime())) return "-";
 
         let bYear = birthDate.getFullYear();
-        if (bYear > 2400) {
-            bYear -= 543;
-        }
+        if (bYear > 2400) bYear -= 543;
 
         const today = new Date();
         let years = today.getFullYear() - bYear;
         let months = today.getMonth() - birthDate.getMonth();
 
-        if (today.getDate() < birthDate.getDate()) {
-            months--;
-        }
-        
-        if (months < 0) {
-            years--;
-            months += 12;
-        }
+        if (today.getDate() < birthDate.getDate()) months--;
+        if (months < 0) { years--; months += 12; }
 
         if (years < 0) return "-";
         if (years === 0 && months === 0) return "ไม่ถึง 1 เดือน";
@@ -353,8 +322,8 @@
         return result.trim();
     }
 
-    // ================= เริ่มทำงานเมื่อโหลดหน้าเว็บเสร็จ =================
     $(document).ready(function() {
+        applyAccessRights(); // รันระบบจำกัดสิทธิ์ก่อนเลย
         loadDashboardData();
     });
 
