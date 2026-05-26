@@ -159,7 +159,7 @@
         });
     }
 
-    // 🌟 ดึงประวัติข่าวทั้งหมดมาใส่ตาราง
+    // 🌟 ดึงประวัติข่าวทั้งหมดมาใส่ตาราง (+แก้บัควันที่)
     function loadAllNews() {
         const tbody = document.getElementById('newsTableBody');
         tbody.innerHTML = '<tr><td colspan="4" class="text-center text-primary py-4"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</td></tr>';
@@ -174,14 +174,23 @@
                     return;
                 }
                 allNewsData.forEach(news => {
-                    // ใช้ Timestamp เป็น ID อ้างอิง
                     const newsId = news.Timestamp;
                     let shortTitle = news.Title.length > 30 ? news.Title.substring(0, 30) + '...' : news.Title;
                     
+                    // 🛠️ แก้บัควันที่ในตาราง
+                    let displayDate = news.NewsDate || '-';
+                    if (String(displayDate).includes('T')) {
+                        let parts = String(displayDate).split('T')[0].split('-');
+                        const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                        let y = parseInt(parts[0]);
+                        if (y < 2400) y += 543;
+                        displayDate = `${parseInt(parts[2])} ${thaiMonths[parseInt(parts[1]) - 1]} ${y}`;
+                    }
+
                     const row = `
                     <tr>
                         <td><img src="${news.ImageUrl}" class="img-thumbnail-news shadow-sm"></td>
-                        <td class="text-nowrap">${news.NewsDate}</td>
+                        <td class="text-nowrap">${displayDate}</td>
                         <td class="fw-bold text-primary" title="${news.Title}">${shortTitle}</td>
                         <td class="text-center text-nowrap">
                             <button class="btn btn-sm btn-outline-warning me-1" onclick="editNews('${newsId}')"><i class="fas fa-edit"></i></button>
