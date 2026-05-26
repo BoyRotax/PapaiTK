@@ -18,14 +18,12 @@
 <body>
 
 <script>
-    // 🔒 ระบบความปลอดภัยขั้นสูง: ถ้าไม่ใช่ Admin ไม่ให้เข้าหน้านี้เด็ดขาด!
+    // 🔒 ระบบความปลอดภัยขั้นสูง: บล็อกแค่ Support เท่านั้น! (Admin, Teacher, Clerk เข้าได้)
+    const currentRole = sessionStorage.getItem('userRole');
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'index.html';
-    } else if (sessionStorage.getItem('userRole') !== 'Admin') {
-        alert("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเข้าหน้านี้ได้");
-        window.location.href = 'dashboard.html';
-    } else if (sessionStorage.getItem('userRole') !== 'Teacher') {
-        alert;
+    } else if (currentRole === 'Support') {
+        alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ");
         window.location.href = 'dashboard.html';
     }
 </script>
@@ -38,12 +36,12 @@
                 <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
             </div>
             <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
-            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
-            <a href="growth.html"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
-            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
-            <a href="admin_news.html" class="active"><i class="fas fa-newspaper me-2"></i> ประกาศข่าวสาร</a>
-            <a href="kitchen.html"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
-            <a href="teachers.html"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            <a href="attendance.html" id="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="growth.html" id="menu-growth"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <a href="regdata.html" id="menu-reg"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
+            <a href="admin_news.html" id="menu-news" class="active"><i class="fas fa-newspaper me-2"></i> ประกาศข่าวสาร</a>
+            <a href="kitchen.html" id="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
+            <a href="teachers.html" id="menu-teacher"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
             <hr class="text-secondary">
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
@@ -51,8 +49,9 @@
         <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold"><i class="fas fa-newspaper text-primary"></i> เพิ่มข่าวสารและกิจกรรมล่าสุด</h3>
-                <div class="badge bg-danger fs-6 p-2 rounded-pill">
-                    <i class="fas fa-user-shield me-1"></i> ผู้ดูแลระบบ (Admin)
+                
+                <div class="badge bg-primary fs-6 p-2 rounded-pill" id="roleBadge">
+                    <i class="fas fa-user-circle me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
                 </div>
             </div>
 
@@ -62,7 +61,7 @@
                         <form id="newsForm">
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-secondary">วันที่ลงประกาศ</label>
-                                <input type="text" id="newsDate" class="form-control form-control-lg" placeholder="เช่น 26 พฤษภาคม 2569" required>
+                                <input type="text" id="newsDate" class="form-control form-control-lg" required>
                                 <small class="text-muted">ระบบคำนวณและกรอกวันที่ปัจจุบันให้คุณอัตโนมัติ แก้ไขได้ถ้าต้องการ</small>
                             </div>
 
@@ -103,9 +102,34 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // ⚠️ อย่าลืมเช็คว่า URL ตรงกับของคุณไหม
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
 
+    // 🌟 ดึงข้อมูลส่วนตัวและสิทธิ์จาก Session
+    const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
+    const userRole = sessionStorage.getItem('userRole') || 'Support'; 
+    
+    // โชว์ชื่อและตำแหน่งมุมขวาบน
+    let roleThai = "ผู้ดูแลระบบ";
+    let badgeColor = "bg-danger"; // สีแดงสำหรับแอดมิน
+    if(userRole === 'Teacher') { roleThai = "ครูประจำชั้น"; badgeColor = "bg-success"; } // สีเขียวสำหรับครู
+    if(userRole === 'Clerk') { roleThai = "ธุรการ"; badgeColor = "bg-info"; } // สีฟ้าสำหรับธุรการ
+    
+    document.getElementById('roleBadge').className = `badge ${badgeColor} fs-6 p-2 rounded-pill`;
+    document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
+
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+
+    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (เอามาจากแดชบอร์ด)
+    function applyAccessRights() {
+        if (userRole === 'Teacher') {
+            $('#menu-reg, #menu-teacher, #menu-kitchen').hide();
+        } else if (userRole === 'Clerk') {
+            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide();
+        } else if (userRole === 'Support') {
+            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news').hide();
+        }
+    }
 
     // ✨ ฟังก์ชันกรอกวันที่ไทยปัจจุบันอัตโนมัติ
     function setThaiDateToday() {
@@ -126,7 +150,8 @@
     }
 
     $(document).ready(function() {
-        setThaiDateToday(); // รันวันที่ปัจจุบันทันทีเมื่อเปิดหน้าเว็บ
+        applyAccessRights(); // รันระบบซ่อนเมนู
+        setThaiDateToday();  // รันวันที่อัตโนมัติ
     });
 
     document.getElementById('newsForm').addEventListener('submit', async function(e) {
