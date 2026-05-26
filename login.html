@@ -66,10 +66,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // 🌟 ล็อกอินสำเร็จ เก็บข้อมูลและตำแหน่ง (Role) ลงเครื่อง
+                    // 🌟 ล็อกอินสำเร็จ เก็บข้อมูล สิทธิ์ และ "ห้องประจำ" ลงเครื่อง
                     sessionStorage.setItem('isLoggedIn', 'true');
                     sessionStorage.setItem('userName', data.name);
                     sessionStorage.setItem('userRole', data.role);
+                    sessionStorage.setItem('userClass', data.classLevel); // เก็บระดับชั้น
+                    sessionStorage.setItem('userRoom', data.room);        // เก็บห้อง
                     
                     window.location.href = 'dashboard.html'; 
                 } else {
