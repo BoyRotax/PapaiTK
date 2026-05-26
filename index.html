@@ -121,46 +121,54 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // ⚠️ อย่าลืมใส่ลิงก์ scriptURL อันล่าสุดของคุณตรงนี้นะครับ
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
+        // ⚠️ ลิงก์ scriptURL 
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
 
-    document.addEventListener("DOMContentLoaded", function() {
-        fetch(scriptURL + '?action=getNews')
-            .then(res => res.json())
-            .then(response => {
-                const container = document.getElementById('newsContainer');
-                container.innerHTML = ''; // ล้างตัวโหลด
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch(scriptURL + '?action=getNews')
+                .then(res => res.json())
+                .then(response => {
+                    const container = document.getElementById('newsContainer');
+                    container.innerHTML = ''; 
 
-                if (!response.data || response.data.length === 0) {
-                    container.innerHTML = '<div class="col-12 text-center text-muted py-5">ยังไม่มีข่าวสารในขณะนี้</div>';
-                    return;
-                }
+                    if (!response.data || response.data.length === 0) {
+                        container.innerHTML = '<div class="col-12 text-center text-muted py-5">ยังไม่มีข่าวสารในขณะนี้</div>';
+                        return;
+                    }
 
-                response.data.forEach(news => {
-                    // ตัดคำอธิบายไม่ให้ยาวเกินไป
-                    let shortDesc = news.Content.length > 80 ? news.Content.substring(0, 80) + '...' : news.Content;
+                    response.data.forEach(news => {
+                        let shortDesc = news.Content.length > 80 ? news.Content.substring(0, 80) + '...' : news.Content;
+                        
+                        // 🛠️ แก้บัควันที่! แปลงร่างจากตัวยาวๆ ให้กลายเป็นภาษาไทยสวยๆ
+                        let displayDate = news.NewsDate || '-';
+                        if (String(displayDate).includes('T')) {
+                            let parts = String(displayDate).split('T')[0].split('-');
+                            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                            let y = parseInt(parts[0]);
+                            if (y < 2400) y += 543;
+                            displayDate = `${parseInt(parts[2])} ${thaiMonths[parseInt(parts[1]) - 1]} ${y}`;
+                        }
 
-                    const card = `
-                    <div class="col-md-4">
-                        <div class="card card-news h-100">
-                            <img src="${news.ImageUrl}" class="news-img" alt="กิจกรรม">
-                            <div class="card-body p-4 d-flex flex-column">
-                                <div class="news-date"><i class="far fa-calendar-alt me-1"></i> ${news.NewsDate}</div>
-                                <h5 class="fw-bold mb-3">${news.Title}</h5>
-                                <p class="text-muted flex-grow-1" style="font-size: 15px;">${shortDesc}</p>
+                        const card = `
+                        <div class="col-md-4">
+                            <div class="card card-news h-100">
+                                <img src="${news.ImageUrl}" class="news-img" alt="กิจกรรม">
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="news-date"><i class="far fa-calendar-alt me-1"></i> ${displayDate}</div>
+                                    <h5 class="fw-bold mb-3">${news.Title}</h5>
+                                    <p class="text-muted flex-grow-1" style="font-size: 15px;">${shortDesc}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    `;
-                    container.innerHTML += card;
+                        `;
+                        container.innerHTML += card;
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('newsContainer').innerHTML = '<div class="col-12 text-center text-danger py-5">ดึงข้อมูลข่าวสารไม่สำเร็จ</div>';
                 });
-            })
-            .catch(err => {
-                document.getElementById('newsContainer').innerHTML = '<div class="col-12 text-center text-danger py-5">ดึงข้อมูลข่าวสารไม่สำเร็จ</div>';
-            });
-    });
-</script>
+        });
+    </script>
 </body>
 </html>
