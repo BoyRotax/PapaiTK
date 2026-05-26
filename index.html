@@ -150,16 +150,17 @@
                             displayDate = `${parseInt(parts[2])} ${thaiMonths[parseInt(parts[1]) - 1]} ${y}`;
                         }
 
+                        // เปลี่ยนจาก div เป็น a href="news.html?id=..."
                         const card = `
                         <div class="col-md-4">
-                            <div class="card card-news h-100">
+                            <a href="news.html?id=${news.Timestamp}" class="card card-news h-100" style="text-decoration: none; color: inherit;">
                                 <img src="${news.ImageUrl}" class="news-img" alt="กิจกรรม">
                                 <div class="card-body p-4 d-flex flex-column">
                                     <div class="news-date"><i class="far fa-calendar-alt me-1"></i> ${displayDate}</div>
                                     <h5 class="fw-bold mb-3">${news.Title}</h5>
                                     <p class="text-muted flex-grow-1" style="font-size: 15px;">${shortDesc}</p>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                         `;
                         container.innerHTML += card;
