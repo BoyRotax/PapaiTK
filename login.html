@@ -26,7 +26,7 @@
             <form id="loginForm">
                 <div class="mb-3">
                     <label class="form-label text-muted fw-bold"><i class="fas fa-user"></i> ชื่อผู้ใช้งาน (Username)</label>
-                    <input type="text" id="username" class="form-control form-control-lg" required>
+                    <input type="text" id="username" class="form-control form-control-lg" placeholder="เช่น teacher@gmail.com" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label text-muted fw-bold"><i class="fas fa-lock"></i> รหัสผ่าน (Password)</label>
@@ -42,8 +42,8 @@
 </div>
 
 <script>
-    // ⚠️ ใส่ URL Web App อันล่าสุดของคุณตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec';
+    // ✅ อัปเดตลิงก์ที่ถูกต้องให้เรียบร้อยแล้ว!
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -65,11 +65,8 @@
         fetch(loginURL, { redirect: "follow" })
             .then(response => response.json())
             .then(data => {
-                // ⚠️ เพิ่มบรรทัดนี้ เพื่อดูว่า Google ส่งอะไรกลับมา!
-                alert("Google ตอบกลับมาว่า Status = " + data.status); 
-
                 if (data.status === 'success') {
-                    alert("กำลังพาไปหน้า Dashboard..."); // ⚠️ แจ้งเตือนก่อนย้ายหน้า
+                    // 🌟 ล็อกอินสำเร็จ เก็บข้อมูลและตำแหน่ง (Role) ลงเครื่อง
                     sessionStorage.setItem('isLoggedIn', 'true');
                     sessionStorage.setItem('userName', data.name);
                     sessionStorage.setItem('userRole', data.role);
@@ -77,15 +74,15 @@
                     window.location.href = 'dashboard.html'; 
                 } else {
                     errorMsg.classList.remove('d-none');
-                    // แสดงข้อความ Error ที่ระบบส่งกลับมา
-                    errorMsg.innerHTML = '<small><i class="fas fa-exclamation-circle"></i> ' + data.msg + '</small>';
+                    errorMsg.innerHTML = '<small><i class="fas fa-exclamation-circle"></i> ' + (data.msg || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') + '</small>';
                     btn.innerHTML = 'เข้าสู่ระบบ';
                     btn.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('เกิดข้อผิดพลาด: เบราว์เซอร์ถูกบล็อก หรือ URL Web App ผิด');
+                errorMsg.classList.remove('d-none');
+                errorMsg.innerHTML = '<small><i class="fas fa-wifi"></i> เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์</small>';
                 btn.innerHTML = 'เข้าสู่ระบบ';
                 btn.disabled = false;
             });
