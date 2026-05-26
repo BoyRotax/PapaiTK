@@ -13,12 +13,12 @@
         .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-custom { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: white; }
+        .img-thumbnail-news { width: 80px; height: 50px; object-fit: cover; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <script>
-    // 🔒 ระบบความปลอดภัยขั้นสูง: บล็อกแค่ Support เท่านั้น! (Admin, Teacher, Clerk เข้าได้)
     const currentRole = sessionStorage.getItem('userRole');
     if (sessionStorage.getItem('isLoggedIn') !== 'true') {
         window.location.href = 'index.html';
@@ -48,52 +48,72 @@
 
         <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold"><i class="fas fa-newspaper text-primary"></i> เพิ่มข่าวสารและกิจกรรมล่าสุด</h3>
-                
+                <h3 class="fw-bold"><i class="fas fa-newspaper text-primary"></i> จัดการข่าวสารและกิจกรรม</h3>
                 <div class="badge bg-primary fs-6 p-2 rounded-pill" id="roleBadge">
                     <i class="fas fa-user-circle me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
                 </div>
             </div>
 
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card card-custom p-4">
+            <div class="row">
+                <div class="col-md-5 mb-4">
+                    <div class="card card-custom p-4 h-100 border-top border-primary border-4">
+                        <h5 class="fw-bold mb-3" id="formTitle">เพิ่มข่าวสารใหม่</h5>
                         <form id="newsForm">
+                            <input type="hidden" id="editNewsId" value="">
+                            
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-secondary">วันที่ลงประกาศ</label>
-                                <input type="text" id="newsDate" class="form-control form-control-lg" required>
-                                <small class="text-muted">ระบบคำนวณและกรอกวันที่ปัจจุบันให้คุณอัตโนมัติ แก้ไขได้ถ้าต้องการ</small>
+                                <label class="form-label fw-bold text-secondary small">วันที่ลงประกาศ</label>
+                                <input type="text" id="newsDate" class="form-control" required>
                             </div>
-
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-secondary">หัวข้อข่าว / ชื่อกิจกรรม <span class="text-danger">*</span></label>
-                                <input type="text" id="title" class="form-control form-control-lg" placeholder="เช่น กิจกรรมวันไหว้ครู ประจำปีการศึกษา 2569" required>
+                                <label class="form-label fw-bold text-secondary small">หัวข้อข่าว <span class="text-danger">*</span></label>
+                                <input type="text" id="title" class="form-control" placeholder="เช่น กิจกรรมวันไหว้ครู" required>
                             </div>
-
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-secondary">รายละเอียดข่าวสาร <span class="text-danger">*</span></label>
-                                <table style="width: 100%;">
-                                    <tr>
-                                        <td>
-                                            <textarea id="content" class="form-control" rows="6" placeholder="พิมพ์เนื้อหาหรือรายละเอียดกิจกรรมที่นี่..." required></textarea>
-                                        </td>
-                                    </tr>
-                                </table>
+                                <label class="form-label fw-bold text-secondary small">รายละเอียด <span class="text-danger">*</span></label>
+                                <textarea id="content" class="form-control" rows="5" placeholder="พิมพ์เนื้อหาที่นี่..." required></textarea>
                             </div>
-
                             <div class="mb-4">
-                                <label class="form-label fw-bold text-secondary">อัปโหลดรูปภาพประกอบกิจกรรม</label>
-                                <input type="file" id="newsImage" class="form-control" accept="image/*">
-                                <small class="text-muted">รูปภาพจะนำไปแสดงบนหน้าแรกของระบบ (หากไม่เลือก จะใช้รูปภาพเริ่มต้นให้ครับ)</small>
+                                <label class="form-label fw-bold text-secondary small">เปลี่ยนรูปภาพ (ถ้ามี)</label>
+                                <input type="file" id="newsImage" class="form-control form-control-sm" accept="image/*">
                             </div>
 
-                            <button type="submit" id="btnSave" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
-                                <i class="fas fa-paper-plane me-1"></i> บันทึกและเผยแพร่ข่าวสารไปยังหน้าแรก
+                            <button type="submit" id="btnSave" class="btn btn-primary w-100 fw-bold shadow-sm mb-2">
+                                <i class="fas fa-paper-plane me-1"></i> บันทึกและเผยแพร่
+                            </button>
+                            <button type="button" id="btnCancel" class="btn btn-secondary w-100 fw-bold d-none" onclick="cancelEdit()">
+                                ยกเลิกการแก้ไข
                             </button>
                         </form>
                     </div>
                 </div>
+
+                <div class="col-md-7 mb-4">
+                    <div class="card card-custom p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold m-0"><i class="fas fa-history text-secondary"></i> ข่าวสารที่เผยแพร่แล้ว</h5>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="loadAllNews()"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle" style="font-size: 14px;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>รูปภาพ</th>
+                                        <th>วันที่</th>
+                                        <th>หัวข้อข่าว</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="newsTableBody">
+                                    <tr><td colspan="4" class="text-center text-muted py-3">กำลังโหลดข้อมูล...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -102,41 +122,31 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // ⚠️ อย่าลืมเช็คว่า URL ตรงกับของคุณไหม
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
 
-    // 🌟 ดึงข้อมูลส่วนตัวและสิทธิ์จาก Session
     const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
     const userRole = sessionStorage.getItem('userRole') || 'Support'; 
+    let allNewsData = []; // เก็บข้อมูลข่าวไว้ใช้งานตอนกดปุ่ม Edit
     
-    // โชว์ชื่อและตำแหน่งมุมขวาบน
-    let roleThai = "ผู้ดูแลระบบ";
-    let badgeColor = "bg-danger"; // สีแดงสำหรับแอดมิน
-    if(userRole === 'Teacher') { roleThai = "ครูประจำชั้น"; badgeColor = "bg-success"; } // สีเขียวสำหรับครู
-    if(userRole === 'Clerk') { roleThai = "ธุรการ"; badgeColor = "bg-info"; } // สีฟ้าสำหรับธุรการ
+    let roleThai = "ผู้ดูแลระบบ"; let badgeColor = "bg-danger";
+    if(userRole === 'Teacher') { roleThai = "ครูประจำชั้น"; badgeColor = "bg-success"; } 
+    if(userRole === 'Clerk') { roleThai = "ธุรการ"; badgeColor = "bg-info"; } 
     
     document.getElementById('roleBadge').className = `badge ${badgeColor} fs-6 p-2 rounded-pill`;
     document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (เอามาจากแดชบอร์ด)
     function applyAccessRights() {
-        if (userRole === 'Teacher') {
-            $('#menu-reg, #menu-teacher, #menu-kitchen').hide();
-        } else if (userRole === 'Clerk') {
-            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide();
-        } else if (userRole === 'Support') {
-            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news').hide();
-        }
+        if (userRole === 'Teacher') $('#menu-reg, #menu-teacher, #menu-kitchen').hide();
+        else if (userRole === 'Clerk') $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide();
+        else if (userRole === 'Support') $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news').hide();
     }
 
-    // ✨ ฟังก์ชันกรอกวันที่ไทยปัจจุบันอัตโนมัติ
     function setThaiDateToday() {
         const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
         const d = new Date();
-        const dateStr = `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
-        document.getElementById('newsDate').value = dateStr;
+        document.getElementById('newsDate').value = `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 
     function getBase64(file) {
@@ -149,25 +159,129 @@
         });
     }
 
+    // 🌟 ดึงประวัติข่าวทั้งหมดมาใส่ตาราง
+    function loadAllNews() {
+        const tbody = document.getElementById('newsTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-primary py-4"><i class="fas fa-spinner fa-spin"></i> กำลังโหลด...</td></tr>';
+        
+        fetch(scriptURL + '?action=getAllNews')
+            .then(res => res.json())
+            .then(res => {
+                allNewsData = res.data || [];
+                tbody.innerHTML = '';
+                if(allNewsData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">ยังไม่มีประวัติข่าวสาร</td></tr>';
+                    return;
+                }
+                allNewsData.forEach(news => {
+                    // ใช้ Timestamp เป็น ID อ้างอิง
+                    const newsId = news.Timestamp;
+                    let shortTitle = news.Title.length > 30 ? news.Title.substring(0, 30) + '...' : news.Title;
+                    
+                    const row = `
+                    <tr>
+                        <td><img src="${news.ImageUrl}" class="img-thumbnail-news shadow-sm"></td>
+                        <td class="text-nowrap">${news.NewsDate}</td>
+                        <td class="fw-bold text-primary" title="${news.Title}">${shortTitle}</td>
+                        <td class="text-center text-nowrap">
+                            <button class="btn btn-sm btn-outline-warning me-1" onclick="editNews('${newsId}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteNews('${newsId}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }).catch(() => tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">โหลดข้อมูลไม่สำเร็จ</td></tr>');
+    }
+
+    // 🌟 กดปุ่มแก้ไข นำข้อมูลขึ้นฟอร์ม
+    function editNews(newsId) {
+        const news = allNewsData.find(n => n.Timestamp === newsId);
+        if(!news) return;
+
+        document.getElementById('formTitle').innerText = "แก้ไขข่าวสาร";
+        document.getElementById('formTitle').className = "fw-bold mb-3 text-warning";
+        
+        document.getElementById('editNewsId').value = news.Timestamp;
+        document.getElementById('newsDate').value = news.NewsDate;
+        document.getElementById('title').value = news.Title;
+        document.getElementById('content').value = news.Content;
+        document.getElementById('newsImage').value = ''; 
+        
+        const btnSave = document.getElementById('btnSave');
+        btnSave.innerHTML = '<i class="fas fa-save me-1"></i> บันทึกการแก้ไข';
+        btnSave.className = "btn btn-success w-100 fw-bold shadow-sm mb-2";
+        
+        document.getElementById('btnCancel').classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    }
+
+    // 🌟 ยกเลิกการแก้ไข ล้างฟอร์มกลับสู่โหมดเพิ่มใหม่
+    function cancelEdit() {
+        document.getElementById('formTitle').innerText = "เพิ่มข่าวสารใหม่";
+        document.getElementById('formTitle').className = "fw-bold mb-3";
+        
+        document.getElementById('newsForm').reset();
+        document.getElementById('editNewsId').value = '';
+        setThaiDateToday();
+        
+        const btnSave = document.getElementById('btnSave');
+        btnSave.innerHTML = '<i class="fas fa-paper-plane me-1"></i> บันทึกและเผยแพร่';
+        btnSave.className = "btn btn-primary w-100 fw-bold shadow-sm mb-2";
+        
+        document.getElementById('btnCancel').classList.add('d-none');
+    }
+
+    // 🌟 ลบข่าวสาร
+    function deleteNews(newsId) {
+        Swal.fire({
+            title: 'ลบข่าวสารนี้?',
+            text: "ข้อมูลจะถูกลบออกจากหน้าเว็บและกู้คืนไม่ได้!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'ยืนยันลบ',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'action=deleteNews&data=' + encodeURIComponent(JSON.stringify({ newsId: newsId }))
+                }).then(res => res.json()).then(data => {
+                    if(data.status === "success") {
+                        Swal.fire('สำเร็จ', 'ลบข่าวสารเรียบร้อย', 'success');
+                        loadAllNews();
+                        if(document.getElementById('editNewsId').value === newsId) cancelEdit();
+                    } else Swal.fire('ผิดพลาด', data.msg, 'error');
+                });
+            }
+        });
+    }
+
     $(document).ready(function() {
-        applyAccessRights(); // รันระบบซ่อนเมนู
-        setThaiDateToday();  // รันวันที่อัตโนมัติ
+        applyAccessRights(); 
+        setThaiDateToday(); 
+        loadAllNews(); // โหลดประวัติตาราง
     });
 
+    // 🌟 ส่งฟอร์ม (รองรับทั้งการ Save ใหม่ และ Update)
     document.getElementById('newsForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const btn = document.getElementById('btnSave');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กําลังบันทึกข้อมูลและอัปโหลดรูปภาพ...';
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กําลังดำเนินการ...';
         btn.disabled = true;
 
         const fileInput = document.getElementById('newsImage');
         let base64Img = "";
-        if(fileInput.files.length > 0) {
-            base64Img = await getBase64(fileInput.files[0]);
-        }
+        if(fileInput.files.length > 0) base64Img = await getBase64(fileInput.files[0]);
 
         const payload = {
+            editId: document.getElementById('editNewsId').value, // ถ้ามีค่า = แก้ไข, ถ้าว่าง = สร้างใหม่
             newsDate: document.getElementById('newsDate').value.trim(),
             title: document.getElementById('title').value.trim(),
             content: document.getElementById('content').value.trim(),
@@ -178,31 +292,15 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'action=saveNews&data=' + encodeURIComponent(JSON.stringify(payload))
-        })
-        .then(res => res.json())
-        .then(data => {
+        }).then(res => res.json()).then(data => {
             if(data.status === "success") {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'เผยแพร่ข่าวสารสำเร็จ!',
-                    text: 'ข่าวสารนี้จะไปโชว์ที่หน้าแรก (Landing Page) ทันที',
-                    confirmButtonText: 'รับทราบ'
-                }).then(() => {
-                    document.getElementById('title').value = '';
-                    document.getElementById('content').value = '';
-                    document.getElementById('newsImage').value = '';
-                    setThaiDateToday();
+                Swal.fire('สำเร็จ!', data.msg, 'success').then(() => {
+                    cancelEdit(); // ล้างฟอร์ม
+                    loadAllNews(); // โหลดตารางใหม่
                 });
-            } else {
-                Swal.fire('เกิดข้อผิดพลาด', data.msg || 'บันทึกข้อมูลไม่สำเร็จ', 'error');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            Swal.fire('เชื่อมต่อล้มเหลว', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลังบ้านได้', 'error');
-        })
-        .finally(() => {
-            btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> บันทึกและเผยแพร่ข่าวสารไปยังหน้าแรก';
+            } else Swal.fire('เกิดข้อผิดพลาด', data.msg, 'error');
+        }).finally(() => {
+            btn.innerHTML = originalText;
             btn.disabled = false;
         });
     });
