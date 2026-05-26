@@ -24,6 +24,9 @@
     } else if (sessionStorage.getItem('userRole') !== 'Admin') {
         alert("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเข้าหน้านี้ได้");
         window.location.href = 'dashboard.html';
+    } else if (sessionStorage.getItem('userRole') !== 'Teacher') {
+        alert;
+        window.location.href = 'dashboard.html';
     }
 </script>
 
