@@ -182,15 +182,17 @@
 
     // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
     function applyAccessRights() {
-     if (userRole === 'Teacher') {
-         $('#menu-reg, #menu-teacher, #menu-kitchen, #menu-news, #btnAddStudent').hide(); // 🌟 เติม #menu-news
-     } else if (userRole === 'Clerk') {
-         $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen, #menu-news').hide(); // 🌟 เติม #menu-news
-     } else if (userRole === 'Support') {
-         $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); // 🌟 เติม #menu-news
-     }
-     // ถ้าเป็น Admin จะไม่โดนซ่อนอะไรเลย มองเห็นเมนูข่าวสารนี้คนเดียวเต็มๆ ครับ!
- }
+        if (userRole === 'Teacher') {
+            // ครู: ซ่อนข้อมูลเด็ก, ครู, ครัว (แต่เปิดเมนูข่าวสารให้แล้ว!)
+            $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide(); 
+        } else if (userRole === 'Clerk') {
+            // ธุรการ: ซ่อนเช็คชื่อ, พัฒนาการ, ครู, ครัว (แต่เปิดเมนูข่าวสารให้แล้ว!)
+            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide(); 
+        } else if (userRole === 'Support') {
+            // Support: ซ่อนเกือบหมด รวมถึงเมนูข่าวสารด้วย (#menu-news ยังคงถูกซ่อน)
+            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); 
+        }
+    }
 
     let dataTable; 
 
