@@ -243,6 +243,15 @@
                     dataTable.column(4).search(val, true, false).draw();
                     dataTable.column(4).visible(this.value ? false : true);
                 });
+
+                // ==============================================================
+                // 🌟 ระบบตั้งค่าเริ่มต้นอัตโนมัติตามห้องประจำของครู (จากที่จำไว้ตอน Login)
+                // ==============================================================
+                const uClass = sessionStorage.getItem('userClass');
+                const uRoom = sessionStorage.getItem('userRoom');
+                if (uClass && uClass !== "undefined") $('#filterClass').val(uClass).trigger('change');
+                if (uRoom && uRoom !== "undefined") $('#filterRoom').val(uRoom).trigger('change');
+
             })
             .catch(err => console.error("โหลดข้อมูลนักเรียนไม่สำเร็จ:", err));
 
