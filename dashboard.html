@@ -334,10 +334,27 @@
         return result.trim();
     }
 
-    $(document).ready(function() {
-        applyAccessRights(); // รันระบบจำกัดสิทธิ์ก่อนเลย
-        loadDashboardData();
-    });
+    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
+    function applyAccessRights() {
+        // 1. กฎการซ่อนเมนูภาคปกติ (เอา #menu-sp ออกจากบล็อกนี้ เพื่อไปตั้งกฎแยก)
+        if (userRole === 'Teacher') {
+            $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide(); 
+        } else if (userRole === 'Clerk') {
+            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide(); 
+        } else if (userRole === 'Support') {
+            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); 
+        }
+
+        // 2. 🌟 กฎเหล็กพิเศษสำหรับ "ปุ่มระบบเรียนพิเศษ" (#menu-sp)
+        // สั่งให้ "ซ่อน" ปุ่มนี้กับทุกคนไว้ก่อนเลย
+        $('#menu-sp').hide();
+        
+        // ตรวจสอบ: ถ้าเป็น Admin หรือ ชื่อตรงกับครูคนที่รับผิดชอบ ให้ "แสดง" ปุ่มนี้ขึ้นมา
+        // ⚠️ แก้ไขคำว่า "Noom" ให้ตรงกับตัวอักษรในคอลัมน์ Name ของครูคนนั้นในตาราง Sheets แบบเป๊ะๆ นะครับ
+        if (userRole === 'admin' || userName === 'noom.sakaewan@gmail.com') {
+            $('#menu-sp').show();
+        }
+    }
 
 </script>
 </body>
