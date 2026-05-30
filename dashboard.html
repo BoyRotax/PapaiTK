@@ -11,7 +11,7 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
         .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
-        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
         .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         
@@ -23,6 +23,7 @@
             border-bottom: 2px solid #ccc !important; background-color: #f4f7f6;
         }
 
+        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น (Smart Print CSS) ================= */
         @media print {
             body { background-color: white; }
             .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, 
@@ -64,6 +65,9 @@
             <a href="admin_news.html" id="menu-news"><i class="fas fa-newspaper me-2"></i> ประกาศข่าวสาร</a>
             <a href="kitchen.html" id="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
             <a href="teachers.html" id="menu-teacher"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
+            
+            <a href="#" id="menu-sp" onclick="goToSpecialSystem()" class="text-warning mt-3"><i class="fas fa-star me-2"></i> ระบบเรียนพิเศษ</a>
+            
             <hr class="text-secondary">
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
@@ -71,8 +75,9 @@
         <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold"><i class="fas fa-chart-pie"></i> แดชบอร์ดสรุปข้อมูล</h3>
-                <div class="badge bg-primary fs-6 p-2 rounded-pill">
-                    <i class="fas fa-user-shield me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
+                
+                <div class="badge fs-6 p-2 rounded-pill shadow-sm" id="roleBadge">
+                    <i class="fas fa-user-circle me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
                 </div>
             </div>
 
@@ -161,18 +166,20 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // ⚠️ นำ Web App URL ของคุณมาใส่ตรงนี้ ⚠️
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
+    // ⚠️ ลิงก์ระบบภาคปกติ PapaiTK (ตรวจให้แน่ใจว่าเป็นของหน้าปกตินะครับ)
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
 
     // 🌟 ดึงข้อมูลส่วนตัวและสิทธิ์จาก Session
     const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
-    const userRole = sessionStorage.getItem('userRole') || 'Support'; // ถ้าไม่มีสิทธิ์ ให้เป็นระดับต่ำสุด
+    const userRole = sessionStorage.getItem('userRole') || 'Support'; 
     
-    // โชว์ชื่อและตำแหน่งมุมขวาบน
-    let roleThai = "ผู้ดูแลระบบ";
-    if(userRole === 'Teacher') roleThai = "ครูประจำชั้น";
-    if(userRole === 'Clerk') roleThai = "ธุรการ";
-    if(userRole === 'Support') roleThai = "เจ้าหน้าที่ทั่วไป";
+    // โชว์ชื่อและตำแหน่งมุมขวาบน พร้อมสีป้ายที่ต่างกัน
+    let roleThai = "ผู้ดูแลระบบ"; let badgeColor = "bg-danger";
+    if(userRole === 'Teacher') { roleThai = "ครูประจำชั้น"; badgeColor = "bg-success"; } 
+    if(userRole === 'Clerk') { roleThai = "ธุรการ"; badgeColor = "bg-info text-dark"; } 
+    if(userRole === 'Support') { roleThai = "เจ้าหน้าที่ทั่วไป"; badgeColor = "bg-secondary"; }
+    
+    document.getElementById('roleBadge').className = `badge ${badgeColor} fs-6 p-2 rounded-pill shadow-sm`;
     document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
 
     function logout() {
@@ -182,16 +189,28 @@
 
     // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
     function applyAccessRights() {
+        // 1. ซ่อนเมนูหลักตามตำแหน่ง
         if (userRole === 'Teacher') {
-            // ครู: ซ่อนข้อมูลเด็ก, ครู, ครัว (แต่เปิดเมนูข่าวสารให้แล้ว!)
             $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide(); 
         } else if (userRole === 'Clerk') {
-            // ธุรการ: ซ่อนเช็คชื่อ, พัฒนาการ, ครู, ครัว (แต่เปิดเมนูข่าวสารให้แล้ว!)
             $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide(); 
         } else if (userRole === 'Support') {
-            // Support: ซ่อนเกือบหมด รวมถึงเมนูข่าวสารด้วย (#menu-news ยังคงถูกซ่อน)
             $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); 
         }
+
+        // 2. 🌟 กฎพิเศษสำหรับปุ่ม "ระบบเรียนพิเศษ"
+        $('#menu-sp').hide(); // ปิดไว้ก่อนทุกคน
+        // เปิดให้แค่ Admin หรือ ครูที่ชื่อ Noom เท่านั้น (เช็คชื่อให้ตรงกับตาราง Users)
+        if (userRole === 'admin' || userName === 'noom.sakaewan@gmail.com') {
+            $('#menu-sp').show();
+        }
+    }
+
+    // 🌟 ฟังก์ชันวาร์ปข้ามไประบบเรียนพิเศษ
+    function goToSpecialSystem() {
+        sessionStorage.setItem('isSpLoggedIn', 'true');
+        sessionStorage.setItem('spUserName', userName);
+        window.location.href = 'https://boyrotax.github.io/uuSPStudents/sp_dashboard.html';
     }
 
     let dataTable; 
@@ -211,7 +230,7 @@
                         { 
                             data: 'FullName',
                             render: function(data, type, row) {
-                                // 🌟 ถ้าเป็น Admin หรือ ธุรการ ให้คลิกแก้ชื่อได้ ถ้าไม่ใช่ให้โชว์ข้อความเฉยๆ
+                                // Admin/Clerk แก้ข้อมูลเด็กได้
                                 if (userRole === 'Admin' || userRole === 'Clerk') {
                                     return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
                                 } else {
@@ -247,14 +266,11 @@
                     dataTable.column(4).visible(this.value ? false : true);
                 });
 
-                // ==============================================================
-                // 🌟 ระบบตั้งค่าเริ่มต้นอัตโนมัติตามห้องประจำของครู (จากที่จำไว้ตอน Login)
-                // ==============================================================
+                // 🌟 ดึงข้อมูลห้องประจำจาก Session (ถ้าครูล็อกอิน) เพื่อตั้งค่าค้นหาให้อัตโนมัติ
                 const uClass = sessionStorage.getItem('userClass');
                 const uRoom = sessionStorage.getItem('userRoom');
-                if (uClass && uClass !== "undefined") $('#filterClass').val(uClass).trigger('change');
-                if (uRoom && uRoom !== "undefined") $('#filterRoom').val(uRoom).trigger('change');
-
+                if (uClass && uClass !== "undefined" && uClass !== "") $('#filterClass').val(uClass).trigger('change');
+                if (uRoom && uRoom !== "undefined" && uRoom !== "") $('#filterRoom').val(uRoom).trigger('change');
             })
             .catch(err => console.error("โหลดข้อมูลนักเรียนไม่สำเร็จ:", err));
 
@@ -265,6 +281,7 @@
             });
     }
 
+    // ================= ระบบสั่งพิมพ์อัจฉริยะ =================
     function printTable() {
         if(!dataTable) return;
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
@@ -334,27 +351,10 @@
         return result.trim();
     }
 
-    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
-    function applyAccessRights() {
-        // 1. กฎการซ่อนเมนูภาคปกติ (เอา #menu-sp ออกจากบล็อกนี้ เพื่อไปตั้งกฎแยก)
-        if (userRole === 'Teacher') {
-            $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide(); 
-        } else if (userRole === 'Clerk') {
-            $('#menu-attend, #menu-growth, #menu-teacher, #menu-kitchen').hide(); 
-        } else if (userRole === 'Support') {
-            $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); 
-        }
-
-        // 2. 🌟 กฎเหล็กพิเศษสำหรับ "ปุ่มระบบเรียนพิเศษ" (#menu-sp)
-        // สั่งให้ "ซ่อน" ปุ่มนี้กับทุกคนไว้ก่อนเลย
-        $('#menu-sp').hide();
-        
-        // ตรวจสอบ: ถ้าเป็น Admin หรือ ชื่อตรงกับครูคนที่รับผิดชอบ ให้ "แสดง" ปุ่มนี้ขึ้นมา
-        // ⚠️ แก้ไขคำว่า "Noom" ให้ตรงกับตัวอักษรในคอลัมน์ Name ของครูคนนั้นในตาราง Sheets แบบเป๊ะๆ นะครับ
-        if (userRole === 'admin' || userName === 'noom.sakaewan@gmail.com') {
-            $('#menu-sp').show();
-        }
-    }
+    $(document).ready(function() {
+        applyAccessRights(); // รันระบบเช็คสิทธิ์ซ่อนเมนูก่อน
+        loadDashboardData(); // โหลดข้อมูลลงตาราง
+    });
 
 </script>
 </body>
