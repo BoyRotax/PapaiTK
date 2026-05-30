@@ -23,7 +23,6 @@
             border-bottom: 2px solid #ccc !important; background-color: #f4f7f6;
         }
 
-        /* ================= ซ่อนส่วนที่ไม่ต้องการตอนปริ๊น (Smart Print CSS) ================= */
         @media print {
             body { background-color: white; }
             .sidebar, .navbar, .btn, #roomFilterContainer, #summaryCards, 
@@ -39,7 +38,7 @@
                 background-color: #f9f9f9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
             a { text-decoration: none !important; color: black !important; pointer-events: none; }
-            i.fa-edit { display: none !important; }
+            i.fa-edit, i.fa-search { display: none !important; }
         }
     </style>
 </head>
@@ -75,7 +74,6 @@
         <div class="col-md-10 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold"><i class="fas fa-chart-pie"></i> แดชบอร์ดสรุปข้อมูล</h3>
-                
                 <div class="badge fs-6 p-2 rounded-pill shadow-sm" id="roleBadge">
                     <i class="fas fa-user-circle me-1"></i> <span id="displayUserName">กำลังโหลด...</span>
                 </div>
@@ -166,14 +164,11 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // ⚠️ ลิงก์ระบบภาคปกติ PapaiTK (ตรวจให้แน่ใจว่าเป็นของหน้าปกตินะครับ)
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
 
-    // 🌟 ดึงข้อมูลส่วนตัวและสิทธิ์จาก Session
     const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
     const userRole = sessionStorage.getItem('userRole') || 'Support'; 
     
-    // โชว์ชื่อและตำแหน่งมุมขวาบน พร้อมสีป้ายที่ต่างกัน
     let roleThai = "ผู้ดูแลระบบ"; let badgeColor = "bg-danger";
     if(userRole === 'Teacher') { roleThai = "ครูประจำชั้น"; badgeColor = "bg-success"; } 
     if(userRole === 'Clerk') { roleThai = "ธุรการ"; badgeColor = "bg-info text-dark"; } 
@@ -182,14 +177,9 @@
     document.getElementById('roleBadge').className = `badge ${badgeColor} fs-6 p-2 rounded-pill shadow-sm`;
     document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
 
-    function logout() {
-        sessionStorage.clear();
-        window.location.href = 'index.html';
-    }
+    function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 ระบบซ่อน/แสดงเมนูตามสิทธิ์ (Role-Based Access Control)
     function applyAccessRights() {
-        // 1. ซ่อนเมนูหลักตามตำแหน่ง
         if (userRole === 'Teacher') {
             $('#menu-reg, #menu-teacher, #menu-kitchen, #btnAddStudent').hide(); 
         } else if (userRole === 'Clerk') {
@@ -198,15 +188,12 @@
             $('#menu-attend, #menu-growth, #menu-reg, #menu-teacher, #menu-news, #btnAddStudent').hide(); 
         }
 
-        // 2. 🌟 กฎพิเศษสำหรับปุ่ม "ระบบเรียนพิเศษ"
-        $('#menu-sp').hide(); // ปิดไว้ก่อนทุกคน
-        // เปิดให้แค่ Admin หรือ ครูที่ชื่อ Noom เท่านั้น (เช็คชื่อให้ตรงกับตาราง Users)
+        $('#menu-sp').hide();
         if (userRole === 'Admin' || userName === 'Noom') {
             $('#menu-sp').show();
         }
     }
 
-    // 🌟 ฟังก์ชันวาร์ปข้ามไประบบเรียนพิเศษ
     function goToSpecialSystem() {
         sessionStorage.setItem('isSpLoggedIn', 'true');
         sessionStorage.setItem('spUserName', userName);
@@ -230,10 +217,15 @@
                         { 
                             data: 'FullName',
                             render: function(data, type, row) {
-                                // Admin/Clerk แก้ข้อมูลเด็กได้
+                                // 🌟 ปรับปรุง: แยกสิทธิ์การกดชื่อนักเรียน
                                 if (userRole === 'Admin' || userRole === 'Clerk') {
+                                    // แอดมินและธุรการ: ไอคอนดินสอ (แก้ไขได้เต็มที่)
                                     return `<a href="regdata.html?id=${row.StudentId}" class="text-decoration-none fw-bold text-primary" title="คลิกเพื่อแก้ไขข้อมูล"><i class="fas fa-edit"></i> ${data}</a>`;
+                                } else if (userRole === 'Teacher') {
+                                    // ครู: ไอคอนแว่นขยาย (แนบ ?readonly=true ไปด้วย เพื่อให้หน้า regdata รู้ว่าให้อ่านอย่างเดียว)
+                                    return `<a href="regdata.html?id=${row.StudentId}&readonly=true" class="text-decoration-none fw-bold text-info" title="คลิกเพื่อดูข้อมูลนักเรียน"><i class="fas fa-search"></i> ${data}</a>`;
                                 } else {
+                                    // แม่บ้าน/ภารโรง: เป็นตัวหนังสือธรรมดา กดไม่ได้
                                     return `<span class="fw-bold">${data}</span>`;
                                 }
                             }
@@ -266,7 +258,6 @@
                     dataTable.column(4).visible(this.value ? false : true);
                 });
 
-                // 🌟 ดึงข้อมูลห้องประจำจาก Session (ถ้าครูล็อกอิน) เพื่อตั้งค่าค้นหาให้อัตโนมัติ
                 const uClass = sessionStorage.getItem('userClass');
                 const uRoom = sessionStorage.getItem('userRoom');
                 if (uClass && uClass !== "undefined" && uClass !== "") $('#filterClass').val(uClass).trigger('change');
@@ -281,7 +272,6 @@
             });
     }
 
-    // ================= ระบบสั่งพิมพ์อัจฉริยะ =================
     function printTable() {
         if(!dataTable) return;
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
@@ -352,8 +342,8 @@
     }
 
     $(document).ready(function() {
-        applyAccessRights(); // รันระบบเช็คสิทธิ์ซ่อนเมนูก่อน
-        loadDashboardData(); // โหลดข้อมูลลงตาราง
+        applyAccessRights();
+        loadDashboardData();
     });
 
 </script>
