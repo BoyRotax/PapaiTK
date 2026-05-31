@@ -25,8 +25,8 @@
 
         /* 🖨️ ระบบ Print / PDF แนวนอน 🖨️ */
         @media print {
-            @page { size: landscape; margin: 1cm; } /* บังคับกระดาษเป็นแนวนอน */
-            body { background-color: white; -webkit-print-color-adjust: exact; }
+            @page { size: landscape; margin: 1cm; }
+            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn { 
                 display: none !important; 
             }
@@ -36,7 +36,6 @@
             table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
             th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
             th { background-color: #d8b4fe !important; }
-            /* แปลงไอคอนให้ชัดเจนตอนปริ๊น */
             .text-success { color: #198754 !important; font-weight: bold; }
             .text-danger { color: #dc3545 !important; font-weight: bold; }
         }
@@ -50,7 +49,6 @@
 
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="text-center mb-4">
                 <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -67,7 +65,6 @@
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-10 p-4">
             <div id="printHeader" style="display: none;">
                 <h2 class="fw-bold">รายงานผลการแปรงฟันและดื่มนม</h2>
@@ -89,7 +86,6 @@
 
             <div class="tab-content card-box p-4" id="myTabContent">
                 
-                <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                 <div class="tab-pane fade show active" id="record">
                     <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
                         <div class="col-md-3">
@@ -144,7 +140,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 Tab 2: หน้ารายงานผล -->
                 <div class="tab-pane fade" id="report">
                     <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
                         <div class="col-md-3">
@@ -189,7 +184,6 @@
                     </div>
 
                     <div class="table-responsive">
-                        <!-- 🌟 เพิ่ม ID และ ชื่อ-สกุล ตามคำขอ 🌟 -->
                         <table id="reportTable" class="table table-striped w-100 text-center">
                             <thead class="table-purple">
                                 <tr>
@@ -305,7 +299,7 @@
         let payload = [];
         document.querySelectorAll('#recordTableBody tr').forEach(tr => {
             payload.push({
-                date: "'" + formattedDate, // ป้องกันบัค Google Sheets แปลงวันที่
+                date: "'" + formattedDate, 
                 studentId: tr.getAttribute('data-sid'),
                 classLevel: tr.getAttribute('data-cls'),
                 room: tr.getAttribute('data-rm'),
@@ -330,26 +324,40 @@
         });
     }
 
-    // 🌟 ระบบแกะวันที่แบบครอบจักรวาล (ดักจับขยะ เวลา พ.ศ. ค.ศ. ได้หมด)
-    function parseToDateObj(dateStr) {
-        if (!dateStr) return new Date(0);
-        let dStr = String(dateStr).trim().replace(/'/g, ""); // ลบ ' ขยะทิ้ง
-
-        if (dStr.includes('T')) return new Date(dStr); // สาย ISO สากล
+    // 🌟 1. ฟังก์ชันคำนวณหาวันที่และเวลาแบบ 100% ปลอดภัยจาก Timezone
+    function getSafeTime(val, isEndOfDay) {
+        if (!val) return isEndOfDay ? Infinity : 0;
+        let dStr = String(val).trim().replace(/'/g, ""); // ลบ Single Quote ทิ้ง
+        let y = 1970, m = 0, d = 1;
         
-        if (dStr.includes('/')) {
-            // สายไทย (เช่น 29/05/2569 8:27)
-            let datePart = dStr.split(' ')[0]; // โยนเวลาทิ้ง เอาแค่วันที่
-            let parts = datePart.split('/');
-            if(parts.length === 3) {
-                let day = parseInt(parts[0], 10);
-                let month = parseInt(parts[1], 10) - 1; 
-                let year = parseInt(parts[2], 10);
-                if (year > 2400) year -= 543; // แปลงพ.ศ.กลับเป็นค.ศ.
-                return new Date(year, month, day, 12, 0, 0); // ตั้งเป็นเที่ยงวันป้องกัน Timezone เคลื่อน
+        if (dStr.includes('/')) { // กรณีเป็น 29/05/2569
+            let parts = dStr.split(' ')[0].split('/');
+            d = parseInt(parts[0], 10);
+            m = parseInt(parts[1], 10) - 1;
+            y = parseInt(parts[2], 10);
+            if (y > 2400) y -= 543;
+        } else if (dStr.includes('-') && !dStr.includes('T')) { // กรณีเป็น YYYY-MM-DD จาก Input
+            let parts = dStr.split('-');
+            y = parseInt(parts[0], 10);
+            m = parseInt(parts[1], 10) - 1;
+            d = parseInt(parts[2], 10);
+        } else { // กรณีเป็น ISO สากล
+            let temp = new Date(dStr);
+            if (!isNaN(temp.getTime())) {
+                y = temp.getFullYear(); m = temp.getMonth(); d = temp.getDate();
             }
         }
-        return new Date(dStr); // สายอื่นๆ
+        // บังคับให้เป็น 00:00:00 (เริ่มวัน) หรือ 23:59:59 (สิ้นสุดวัน)
+        return new Date(y, m, d, isEndOfDay ? 23 : 0, isEndOfDay ? 59 : 0, 0).getTime();
+    }
+
+    // 🌟 2. ฟังก์ชันโชว์วันที่หน้าตาราง (ง่ายๆ ตามที่คุณบอก!)
+    function formatDisplayDate(val) {
+        let dStr = String(val).trim().replace(/'/g, "");
+        if (dStr.includes('/')) return dStr.split(' ')[0]; // ถ้ามี / โชว์เลย! ไม่ต้องคิดเยอะ!
+        let temp = new Date(dStr);
+        if (!isNaN(temp.getTime())) return `${String(temp.getDate()).padStart(2,'0')}/${String(temp.getMonth()+1).padStart(2,'0')}/${temp.getFullYear()+543}`;
+        return dStr;
     }
 
     function loadReport() {
@@ -367,15 +375,16 @@
     function filterReport() {
         const startRaw = document.getElementById('repStartDate').value;
         const endRaw = document.getElementById('repEndDate').value;
-        const cls = document.getElementById('repClass').value;
+        const cls = document.getElementById('repClass').value.trim();
 
-        const sTime = startRaw ? new Date(startRaw + "T00:00:00").getTime() : 0;
-        const eTime = endRaw ? new Date(endRaw + "T23:59:59").getTime() : Infinity;
+        const sTime = getSafeTime(startRaw, false);
+        const eTime = getSafeTime(endRaw, true);
 
+        // คัดกรองข้อมูลอย่างแม่นยำ
         let filtered = rawReportData.filter(r => {
-            let rTime = parseToDateObj(r.Date).getTime();
+            let rTime = getSafeTime(r.Date, false);
             let matchDate = (rTime >= sTime && rTime <= eTime);
-            let matchClass = (cls === "" || r.ClassLevel === cls);
+            let matchClass = (cls === "" || String(r.ClassLevel).trim() === cls);
             return matchDate && matchClass;
         });
 
@@ -404,15 +413,9 @@
         reportDataTable = $('#reportTable').DataTable({
             data: filtered,
             columns: [
-                { 
-                    data: 'Date',
-                    render: function(data) {
-                        let d = parseToDateObj(data);
-                        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
-                    }
-                },
+                { data: 'Date', render: function(data) { return formatDisplayDate(data); } },
                 { data: 'StudentId' },
-                { data: 'FullName', className: 'text-start fw-bold' }, // 🌟 คอลัมน์ชื่อ-สกุล โผล่แล้ว
+                { data: 'FullName', className: 'text-start fw-bold' }, 
                 { data: null, render: (data, type, row) => `${row.ClassLevel} ${row.Room ? '(ห้อง '+row.Room+')' : ''}` },
                 { data: 'BrushedTeeth', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> แปรง</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่แปรง</span>' },
                 { data: 'DrankMilk', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> ดื่ม</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่ดื่ม</span>' }
@@ -443,13 +446,12 @@
         let classText = cls ? ` ระดับชั้น ${cls}` : "";
         document.getElementById('printSubtitle').innerText = `${dateText}${classText}`;
 
-        // เตรียมความพร้อมตารางก่อนปริ๊น (โชว์ข้อมูลทั้งหมดไม่แบ่งหน้า)
         const oldLength = reportDataTable.page.len();
         reportDataTable.page.len(-1).draw(false);
 
         setTimeout(function() {
             window.print();
-            reportDataTable.page.len(oldLength).draw(false); // คืนค่าตารางกลับมาหลังปริ๊นเสร็จ
+            reportDataTable.page.len(oldLength).draw(false); 
         }, 500);
     }
 
