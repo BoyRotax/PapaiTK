@@ -22,6 +22,24 @@
         .table-purple th { background-color: #d8b4fe !important; color: #4c1d95; }
         .stat-card { border-radius: 15px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; }
         .stat-card h3 { font-size: 32px; font-weight: 800; color: #4c1d95; margin-bottom: 5px; }
+
+        /* 🖨️ ระบบ Print / PDF แนวนอน 🖨️ */
+        @media print {
+            @page { size: landscape; margin: 1cm; } /* บังคับกระดาษเป็นแนวนอน */
+            body { background-color: white; -webkit-print-color-adjust: exact; }
+            .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn { 
+                display: none !important; 
+            }
+            .col-md-10 { width: 100% !important; padding: 0 !important; }
+            .card-box { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            #printHeader { display: block !important; text-align: center; margin-bottom: 20px; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
+            th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
+            th { background-color: #d8b4fe !important; }
+            /* แปลงไอคอนให้ชัดเจนตอนปริ๊น */
+            .text-success { color: #198754 !important; font-weight: bold; }
+            .text-danger { color: #dc3545 !important; font-weight: bold; }
+        }
     </style>
 </head>
 <body>
@@ -32,6 +50,7 @@
 
 <div class="container-fluid">
     <div class="row">
+        <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="text-center mb-4">
                 <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -48,8 +67,14 @@
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
+        <!-- Main Content -->
         <div class="col-md-10 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div id="printHeader" style="display: none;">
+                <h2 class="fw-bold">รายงานผลการแปรงฟันและดื่มนม</h2>
+                <h5 id="printSubtitle" class="text-secondary">ประจำช่วงเวลา: -</h5>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
                 <div>
                     <h3 class="fw-bold" style="color: #6d28d9;"><i class="fas fa-plus"></i> ระบบแปรงฟัน ดื่มนม ระดับชั้นอนุบาล</h3>
                     <p class="text-muted mb-0">ติดตามกิจกรรมแปรงฟันและดื่มนมของนักเรียน</p>
@@ -57,15 +82,16 @@
                 <div class="badge bg-light text-dark border p-2 shadow-sm fs-6" id="todayDateShow"></div>
             </div>
 
-            <ul class="nav nav-tabs" id="routineTab" role="tablist">
+            <ul class="nav nav-tabs d-print-none" id="routineTab" role="tablist">
                 <li class="nav-item"><button class="nav-link active px-4" data-bs-toggle="tab" data-bs-target="#record"><i class="fas fa-clipboard-check me-1"></i> เช็คแปรงฟัน ดื่มนม</button></li>
                 <li class="nav-item"><button class="nav-link px-4" data-bs-toggle="tab" data-bs-target="#report" onclick="loadReport()"><i class="fas fa-chart-bar me-1"></i> รายงานผล</button></li>
             </ul>
 
             <div class="tab-content card-box p-4" id="myTabContent">
                 
+                <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                 <div class="tab-pane fade show active" id="record">
-                    <div class="row align-items-end mb-4 bg-light p-3 rounded">
+                    <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
                         <div class="col-md-3">
                             <label class="form-label fw-bold">วันที่บันทึก:</label>
                             <input type="date" id="recordDate" class="form-control">
@@ -118,8 +144,9 @@
                     </div>
                 </div>
 
+                <!-- 🌟 Tab 2: หน้ารายงานผล -->
                 <div class="tab-pane fade" id="report">
-                    <div class="row align-items-end mb-4 bg-light p-3 rounded">
+                    <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
                         <div class="col-md-3">
                             <label class="form-label fw-bold small">ตั้งแต่วันที่:</label>
                             <input type="date" id="repStartDate" class="form-control form-control-sm">
@@ -138,36 +165,38 @@
                                 <option value="อนุบาล 3">อนุบาล 3</option>
                             </select>
                         </div>
-                        <div class="col-md-3 text-end">
-                            <button class="btn bg-purple btn-sm w-100 fw-bold" onclick="filterReport()"><i class="fas fa-filter"></i> แสดงรายงาน</button>
+                        <div class="col-md-3 text-end d-flex gap-2">
+                            <button class="btn bg-purple btn-sm flex-grow-1 fw-bold" onclick="filterReport()"><i class="fas fa-filter"></i> แสดงรายงาน</button>
+                            <button class="btn btn-danger btn-sm flex-grow-1 fw-bold" onclick="printReport()"><i class="fas fa-file-pdf"></i> PDF/พิมพ์</button>
                         </div>
                     </div>
 
-                    <h5 class="fw-bold mb-3"><i class="fas fa-poll"></i> ผลการค้นหา</h5>
-                    <div class="row mb-4 g-3">
+                    <div class="row mb-4 g-3 d-print-none">
                         <div class="col-md-6">
                             <div class="stat-card bg-white shadow-sm">
                                 <h6 class="text-muted fw-bold">สรุปการแปรงฟัน</h6>
                                 <h3 id="brushPercent">0%</h3>
-                                <small class="text-muted" id="brushText">0 / 0 ครั้ง</small>
+                                <small class="text-muted" id="brushText">0 / 0 รายการ</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="stat-card bg-warning bg-opacity-10 shadow-sm border-warning">
                                 <h6 class="text-muted fw-bold">สรุปการดื่มนม</h6>
                                 <h3 id="milkPercent" class="text-warning">0%</h3>
-                                <small class="text-muted" id="milkText">0 / 0 ครั้ง</small>
+                                <small class="text-muted" id="milkText">0 / 0 รายการ</small>
                             </div>
                         </div>
                     </div>
 
                     <div class="table-responsive">
+                        <!-- 🌟 เพิ่ม ID และ ชื่อ-สกุล ตามคำขอ 🌟 -->
                         <table id="reportTable" class="table table-striped w-100 text-center">
                             <thead class="table-purple">
                                 <tr>
                                     <th>วันที่</th>
                                     <th>รหัสนักเรียน</th>
-                                    <th class="text-start">ระดับชั้น (ห้อง)</th>
+                                    <th class="text-start">ชื่อ-นามสกุล</th>
+                                    <th>ระดับชั้น (ห้อง)</th>
                                     <th>แปรงฟัน</th>
                                     <th>ดื่มนม</th>
                                 </tr>
@@ -193,6 +222,7 @@
 
     const userRole = sessionStorage.getItem('userRole') || 'Support';
     let allStudents = [];
+    let rawReportData = [];
     let reportDataTable;
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
@@ -275,7 +305,7 @@
         let payload = [];
         document.querySelectorAll('#recordTableBody tr').forEach(tr => {
             payload.push({
-                date: "'" + formattedDate, // 🌟 ป้องกันบัค Google Sheets แปลงวันที่
+                date: "'" + formattedDate, // ป้องกันบัค Google Sheets แปลงวันที่
                 studentId: tr.getAttribute('data-sid'),
                 classLevel: tr.getAttribute('data-cls'),
                 room: tr.getAttribute('data-rm'),
@@ -300,7 +330,28 @@
         });
     }
 
-    let rawReportData = [];
+    // 🌟 ระบบแกะวันที่แบบครอบจักรวาล (ดักจับขยะ เวลา พ.ศ. ค.ศ. ได้หมด)
+    function parseToDateObj(dateStr) {
+        if (!dateStr) return new Date(0);
+        let dStr = String(dateStr).trim().replace(/'/g, ""); // ลบ ' ขยะทิ้ง
+
+        if (dStr.includes('T')) return new Date(dStr); // สาย ISO สากล
+        
+        if (dStr.includes('/')) {
+            // สายไทย (เช่น 29/05/2569 8:27)
+            let datePart = dStr.split(' ')[0]; // โยนเวลาทิ้ง เอาแค่วันที่
+            let parts = datePart.split('/');
+            if(parts.length === 3) {
+                let day = parseInt(parts[0], 10);
+                let month = parseInt(parts[1], 10) - 1; 
+                let year = parseInt(parts[2], 10);
+                if (year > 2400) year -= 543; // แปลงพ.ศ.กลับเป็นค.ศ.
+                return new Date(year, month, day, 12, 0, 0); // ตั้งเป็นเที่ยงวันป้องกัน Timezone เคลื่อน
+            }
+        }
+        return new Date(dStr); // สายอื่นๆ
+    }
+
     function loadReport() {
         if(rawReportData.length > 0) { filterReport(); return; } 
         Swal.fire({ title: 'กำลังดึงข้อมูลรายงาน...', didOpen: () => { Swal.showLoading() }});
@@ -313,40 +364,30 @@
             });
     }
 
-    // 🌟 ระบบคัดกรองวันที่ฉบับสมบูรณ์ (ดักจับทั้งวันที่แบบไทย และ ISO)
     function filterReport() {
         const startRaw = document.getElementById('repStartDate').value;
         const endRaw = document.getElementById('repEndDate').value;
         const cls = document.getElementById('repClass').value;
 
-        // ตั้งเวลาครอบคลุมทั้งวัน (ตั้งแต่เที่ยงคืน ถึง 23:59:59) ป้องกัน Timezone เพี้ยน
         const sTime = startRaw ? new Date(startRaw + "T00:00:00").getTime() : 0;
         const eTime = endRaw ? new Date(endRaw + "T23:59:59").getTime() : Infinity;
 
         let filtered = rawReportData.filter(r => {
-            let rDateRaw = String(r.Date).trim();
-            let rTime = 0;
-
-            if (rDateRaw.includes('/')) {
-                // ถ้าเป็นข้อความเช่น "29/05/2569"
-                let parts = rDateRaw.split(' ')[0].split('/');
-                let y = parseInt(parts[2]);
-                if (y > 2400) y -= 543; // แปลงพ.ศ.กลับเป็นค.ศ.
-                // ใช้เวลา 12:00:00 เป็นจุดกึ่งกลางของวันเสมอ
-                rTime = new Date(`${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T12:00:00`).getTime();
-            } else if (rDateRaw.includes('T')) {
-                // ถ้าโดน Google Sheets แปลงเป็นสากล (ISO Date)
-                rTime = new Date(rDateRaw).getTime();
-            } else {
-                rTime = new Date(rDateRaw).getTime();
-            }
-
+            let rTime = parseToDateObj(r.Date).getTime();
             let matchDate = (rTime >= sTime && rTime <= eTime);
             let matchClass = (cls === "" || r.ClassLevel === cls);
             return matchDate && matchClass;
         });
 
-        // คำนวณเปอร์เซ็นต์
+        // นำข้อมูลชื่อ-นามสกุลจาก allStudents มา Map ใส่เข้าไป
+        filtered = filtered.map(r => {
+            let studentInfo = allStudents.find(s => String(s.StudentId) === String(r.StudentId));
+            return {
+                ...r,
+                FullName: studentInfo ? studentInfo.FullName : 'ไม่ทราบชื่อ'
+            };
+        });
+
         let totalCount = filtered.length;
         let brushCount = filtered.filter(r => String(r.BrushedTeeth).includes("✅")).length;
         let milkCount = filtered.filter(r => String(r.DrankMilk).includes("✅")).length;
@@ -359,7 +400,6 @@
         document.getElementById('milkPercent').innerText = mPercent + '%';
         document.getElementById('milkText').innerText = `${milkCount} / ${totalCount} รายการ`;
 
-        // สร้างตาราง
         if (reportDataTable) reportDataTable.destroy();
         reportDataTable = $('#reportTable').DataTable({
             data: filtered,
@@ -367,15 +407,12 @@
                 { 
                     data: 'Date',
                     render: function(data) {
-                        let dStr = String(data);
-                        if (dStr.includes('T')) {
-                            let d = new Date(dStr);
-                            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
-                        }
-                        return dStr.replace(/'/g, ""); // ลบเครื่องหมาย Single Quote ขยะทิ้งถ้ามี
+                        let d = parseToDateObj(data);
+                        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
                     }
                 },
                 { data: 'StudentId' },
+                { data: 'FullName', className: 'text-start fw-bold' }, // 🌟 คอลัมน์ชื่อ-สกุล โผล่แล้ว
                 { data: null, render: (data, type, row) => `${row.ClassLevel} ${row.Room ? '(ห้อง '+row.Room+')' : ''}` },
                 { data: 'BrushedTeeth', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> แปรง</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่แปรง</span>' },
                 { data: 'DrankMilk', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> ดื่ม</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่ดื่ม</span>' }
@@ -383,6 +420,44 @@
             language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
             order: [[0, 'desc']] 
         });
+    }
+
+    // 🖨️ ฟังก์ชันสำหรับออกรายงาน PDF / พิมพ์
+    function printReport() {
+        if(!reportDataTable || reportDataTable.rows().count() === 0) {
+            Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับพิมพ์ กรุณากรองข้อมูลก่อน', 'warning');
+            return;
+        }
+
+        const startRaw = document.getElementById('repStartDate').value;
+        const endRaw = document.getElementById('repEndDate').value;
+        const cls = document.getElementById('repClass').value;
+        
+        let dateText = "ทั้งหมด";
+        if(startRaw && endRaw) {
+            dateText = `ตั้งแต่วันที่ ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)}`;
+        } else if (startRaw) {
+            dateText = `ตั้งแต่วันที่ ${formatThaiDatePrint(startRaw)}`;
+        }
+
+        let classText = cls ? ` ระดับชั้น ${cls}` : "";
+        document.getElementById('printSubtitle').innerText = `${dateText}${classText}`;
+
+        // เตรียมความพร้อมตารางก่อนปริ๊น (โชว์ข้อมูลทั้งหมดไม่แบ่งหน้า)
+        const oldLength = reportDataTable.page.len();
+        reportDataTable.page.len(-1).draw(false);
+
+        setTimeout(function() {
+            window.print();
+            reportDataTable.page.len(oldLength).draw(false); // คืนค่าตารางกลับมาหลังปริ๊นเสร็จ
+        }, 500);
+    }
+
+    function formatThaiDatePrint(isoDate) {
+        if(!isoDate) return "";
+        const d = new Date(isoDate);
+        const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        return `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 </script>
 </body>
