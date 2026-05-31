@@ -189,7 +189,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // ⚠️ ลิงก์ scriptURL 
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
 
     const userRole = sessionStorage.getItem('userRole') || 'Support';
@@ -198,7 +197,6 @@
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-    // 🌟 ระบบจำกัดสิทธิ์
     function applyAccessRights() {
         if (userRole === 'Support') {
             alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้"); window.location.href = 'dashboard.html';
@@ -220,17 +218,14 @@
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         document.getElementById('todayDateShow').innerHTML = `<i class="far fa-calendar-alt text-primary me-1"></i> วันที่ ${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
 
-        // โหลดค่าห้องของครูประจำชั้น (ถ้ามี)
         const uClass = sessionStorage.getItem('userClass');
         const uRoom = sessionStorage.getItem('userRoom');
         if (uClass && uClass !== "undefined") document.getElementById('filterClass').value = uClass;
         if (uRoom && uRoom !== "undefined") document.getElementById('filterRoom').value = uRoom;
 
-        // โหลดรายชื่อเด็กรอไว้เลย
         fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { allStudents = data; });
     });
 
-    // ================= โหมดบันทึกข้อมูล =================
     function loadStudentsForRecord() {
         const cls = document.getElementById('filterClass').value;
         const rm = document.getElementById('filterRoom').value;
@@ -274,14 +269,13 @@
         const dateVal = document.getElementById('recordDate').value;
         if(!dateVal) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึก', 'warning');
 
-        // จัดฟอร์แมตวันที่ให้ตรงกับระบบ (DD/MM/YYYY)
         const dParts = dateVal.split('-');
         const formattedDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
 
         let payload = [];
         document.querySelectorAll('#recordTableBody tr').forEach(tr => {
             payload.push({
-                date: formattedDate,
+                date: "'" + formattedDate, // 🌟 ป้องกันบัค Google Sheets แปลงวันที่
                 studentId: tr.getAttribute('data-sid'),
                 classLevel: tr.getAttribute('data-cls'),
                 room: tr.getAttribute('data-rm'),
@@ -306,10 +300,9 @@
         });
     }
 
-    // ================= โหมดรายงานผล =================
     let rawReportData = [];
     function loadReport() {
-        if(rawReportData.length > 0) return; // โหลดครั้งเดียวพอ
+        if(rawReportData.length > 0) { filterReport(); return; } 
         Swal.fire({ title: 'กำลังดึงข้อมูลรายงาน...', didOpen: () => { Swal.showLoading() }});
         fetch(scriptURL + '?action=getRoutineReport')
             .then(res => res.json())
@@ -320,21 +313,35 @@
             });
     }
 
+    // 🌟 ระบบคัดกรองวันที่ฉบับสมบูรณ์ (ดักจับทั้งวันที่แบบไทย และ ISO)
     function filterReport() {
         const startRaw = document.getElementById('repStartDate').value;
         const endRaw = document.getElementById('repEndDate').value;
         const cls = document.getElementById('repClass').value;
 
-        // แปลง Date เป็น Time ไว้เปรียบเทียบ
-        const sTime = new Date(startRaw).getTime();
-        const eTime = new Date(endRaw).getTime();
+        // ตั้งเวลาครอบคลุมทั้งวัน (ตั้งแต่เที่ยงคืน ถึง 23:59:59) ป้องกัน Timezone เพี้ยน
+        const sTime = startRaw ? new Date(startRaw + "T00:00:00").getTime() : 0;
+        const eTime = endRaw ? new Date(endRaw + "T23:59:59").getTime() : Infinity;
 
         let filtered = rawReportData.filter(r => {
-            // คืนรูปวันที่ DD/MM/YYYY กลับมาเป็นเปรียบเทียบ
-            let rParts = r.Date.split('/');
-            let rDate = new Date(`${parseInt(rParts[2])-543}-${rParts[1]}-${rParts[0]}`).getTime();
-            
-            let matchDate = (rDate >= sTime && rDate <= eTime);
+            let rDateRaw = String(r.Date).trim();
+            let rTime = 0;
+
+            if (rDateRaw.includes('/')) {
+                // ถ้าเป็นข้อความเช่น "29/05/2569"
+                let parts = rDateRaw.split(' ')[0].split('/');
+                let y = parseInt(parts[2]);
+                if (y > 2400) y -= 543; // แปลงพ.ศ.กลับเป็นค.ศ.
+                // ใช้เวลา 12:00:00 เป็นจุดกึ่งกลางของวันเสมอ
+                rTime = new Date(`${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T12:00:00`).getTime();
+            } else if (rDateRaw.includes('T')) {
+                // ถ้าโดน Google Sheets แปลงเป็นสากล (ISO Date)
+                rTime = new Date(rDateRaw).getTime();
+            } else {
+                rTime = new Date(rDateRaw).getTime();
+            }
+
+            let matchDate = (rTime >= sTime && rTime <= eTime);
             let matchClass = (cls === "" || r.ClassLevel === cls);
             return matchDate && matchClass;
         });
@@ -357,14 +364,24 @@
         reportDataTable = $('#reportTable').DataTable({
             data: filtered,
             columns: [
-                { data: 'Date' },
+                { 
+                    data: 'Date',
+                    render: function(data) {
+                        let dStr = String(data);
+                        if (dStr.includes('T')) {
+                            let d = new Date(dStr);
+                            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
+                        }
+                        return dStr.replace(/'/g, ""); // ลบเครื่องหมาย Single Quote ขยะทิ้งถ้ามี
+                    }
+                },
                 { data: 'StudentId' },
                 { data: null, render: (data, type, row) => `${row.ClassLevel} ${row.Room ? '(ห้อง '+row.Room+')' : ''}` },
                 { data: 'BrushedTeeth', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> แปรง</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่แปรง</span>' },
                 { data: 'DrankMilk', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> ดื่ม</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่ดื่ม</span>' }
             ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
-            order: [[0, 'desc']] // เรียงวันที่ล่าสุดขึ้นก่อน
+            order: [[0, 'desc']] 
         });
     }
 </script>
