@@ -23,9 +23,9 @@
         .stat-card { border-radius: 15px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; }
         .stat-card h3 { font-size: 32px; font-weight: 800; color: #4c1d95; margin-bottom: 5px; }
 
-        /* 🖨️ ระบบ Print / PDF แนวนอน 🖨️ */
+        /* 🖨️ ระบบ Print / PDF แนวตั้ง (Portrait) อัจฉริยะ 🖨️ */
         @media print {
-            @page { size: landscape; margin: 1cm; }
+            @page { size: portrait; margin: 10mm; } /* บังคับกระดาษเป็นแนวตั้ง */
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn, .d-print-none { 
                 display: none !important; 
@@ -33,11 +33,15 @@
             .col-md-10 { width: 100% !important; padding: 0 !important; }
             .card-box { box-shadow: none !important; border: none !important; padding: 0 !important; }
             .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            
             table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
             th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
             th { background-color: #d8b4fe !important; }
             .text-success { color: #198754 !important; font-weight: bold; }
             .text-danger { color: #dc3545 !important; font-weight: bold; }
+
+            /* 🌟 บังคับตัดหน้ากระดาษทุกๆ 30 คน */
+            tbody tr:nth-child(30n) { page-break-after: always; }
         }
     </style>
 </head>
@@ -84,8 +88,9 @@
                 
                 <div class="tab-pane fade show active" id="record">
                     <div id="printRecordHeader" class="print-header" style="display: none;">
-                        <h2 class="fw-bold">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
-                        <h5 id="printRecordSubtitle" class="text-secondary">วันที่: -</h5>
+                        <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
+                        <h2 class="fw-bold text-dark">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
+                        <h6 id="printRecordSubtitle" class="text-secondary mt-2">วันที่: -</h6>
                     </div>
 
                     <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
@@ -124,7 +129,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle text-center table-bordered">
+                        <table id="recordTable" class="table table-hover align-middle text-center table-bordered">
                             <thead class="table-purple">
                                 <tr>
                                     <th>รหัสนักเรียน</th>
@@ -143,8 +148,9 @@
 
                 <div class="tab-pane fade" id="report">
                     <div id="printReportHeader" class="print-header" style="display: none;">
-                        <h2 class="fw-bold">รายงานสรุปการแปรงฟันและดื่มนม</h2>
-                        <h5 id="printReportSubtitle" class="text-secondary">ประจำช่วงเวลา: -</h5>
+                        <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
+                        <h2 class="fw-bold text-dark">รายงานสรุปการแปรงฟันและดื่มนม</h2>
+                        <h6 id="printReportSubtitle" class="text-secondary mt-2">ประจำช่วงเวลา: -</h6>
                     </div>
 
                     <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
@@ -222,6 +228,7 @@
 
     const userRole = sessionStorage.getItem('userRole') || 'Support';
     let allStudents = [];
+    let allTeachers = []; // เพิ่มตัวแปรเก็บครู
     let rawReportData = [];
     let reportDataTable;
 
@@ -264,10 +271,11 @@
             if (userRole === 'Teacher') document.getElementById('filterRoom').disabled = true;
         }
 
+        // โหลดข้อมูลนักเรียนและครูมาเตรียมไว้
         fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { allStudents = data; });
+        fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
     });
 
-    // 🌟 เช็ควันหยุดก่อนดึงรายชื่อ
     async function loadStudentsForRecord() {
         const dateVal = document.getElementById('recordDate').value;
         const cls = document.getElementById('filterClass').value;
@@ -287,7 +295,7 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ตรวจสอบวันหยุด...';
         btn.disabled = true;
 
-        // ตรวจสอบวันหยุดนักขัตฤกษ์จาก Google Sheets
+        // ตรวจสอบวันหยุดนักขัตฤกษ์
         try {
             const res = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
             const holidayData = await res.json();
@@ -295,7 +303,7 @@
                 btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
                 return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name + ' ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
             }
-        } catch(e) {} // ข้ามไปถ้าระบบเช็ควันหยุดพัง
+        } catch(e) {} 
 
         btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
 
@@ -359,7 +367,6 @@
         .then(res => res.json())
         .then(data => {
             if(data.status === 'success') {
-                // 🌟 พอกด OK ปุ๊บ เด้งหน้าปริ๊นทันที!
                 Swal.fire('สำเร็จ', data.message, 'success').then((result) => {
                     if (result.isConfirmed) { printRecordTable(); }
                 });
@@ -371,23 +378,55 @@
         });
     }
 
-    // 🖨️ ฟังก์ชันสำหรับออก PDF / ปริ๊น หน้าเช็คชื่อ (หลังเซฟเสร็จ)
+    // 🌟 ระบบประมวลผลหัวกระดาษอัจฉริยะ (หาระดับชั้น, ห้องที่เหมาะสม และหาครูประจำชั้น)
+    function getPrintHeaderInfo(cls, rm) {
+        let roomDisplay = "";
+        let teacherName = "ไม่ระบุ";
+        
+        if (cls) {
+            // เช็คว่าระดับชั้นนี้ มีห้องอื่นนอกจากห้อง 1 ไหม (เพื่อจะได้รู้ว่าควรใส่คำว่า ห้อง 1 ไหม)
+            let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
+            
+            if (rm) {
+                if (rm === '1' && !hasOtherRooms) {
+                    roomDisplay = ""; // ถ้ามีแค่ห้องเดียว ไม่ต้องใส่คำว่า (ห้อง 1)
+                } else {
+                    roomDisplay = `(ห้อง ${rm})`;
+                }
+            }
+
+            // หาครูประจำชั้นจากฐานข้อมูล Teachers
+            let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
+            if (t && t.Name) {
+                teacherName = (t.Title || "") + t.Name;
+            }
+        }
+        return { roomDisplay, teacherName };
+    }
+
+    // 🖨️ ฟังก์ชันสำหรับออก PDF หน้าเช็คชื่อ
     function printRecordTable() {
         const dateVal = document.getElementById('recordDate').value;
         const cls = document.getElementById('filterClass').value;
         const rm = document.getElementById('filterRoom').value;
         
-        let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${rm ? '(ห้อง '+rm+')' : ''}`;
+        const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, rm);
+        
+        let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${roomDisplay} | ครูประจำชั้น: ${teacherName}`;
         document.getElementById('printRecordSubtitle').innerText = headerTxt;
         
+        // ซ่อนคอลัมน์ "ระดับชั้น" (คอลัมน์ที่ 3) ชั่วคราวเฉพาะตอนปริ๊น
+        document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.add('d-print-none'));
+
         document.getElementById('printRecordHeader').style.display = 'block';
         setTimeout(function() {
             window.print();
             document.getElementById('printRecordHeader').style.display = 'none';
+            // คืนค่าคอลัมน์ให้กลับมาแสดงปกติ
+            document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.remove('d-print-none'));
         }, 500);
     }
 
-    // 🌟 ระบบแกะวันที่แบบครอบจักรวาล (เวอร์ชันที่สมบูรณ์แบบไร้ Timezone)
     function getSafeTime(val, isEndOfDay) {
         if (!val) return isEndOfDay ? Infinity : 0;
         let dStr = String(val).trim().replace(/'/g, ""); 
@@ -502,7 +541,14 @@
             dateText = `ตั้งแต่วันที่ ${formatThaiDatePrint(startRaw)}`;
         }
 
-        let classText = cls ? ` ระดับชั้น ${cls}` : "";
+        let classText = "";
+        if (cls) {
+            const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, "");
+            classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}`;
+            // ซ่อนคอลัมน์ระดับชั้นในตารางรายงาน (คอลัมน์ที่ 4)
+            document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.add('d-print-none'));
+        }
+
         document.getElementById('printReportSubtitle').innerText = `${dateText}${classText}`;
 
         const oldLength = reportDataTable.page.len();
@@ -514,6 +560,10 @@
             window.print();
             reportDataTable.page.len(oldLength).draw(false); 
             document.getElementById('printReportHeader').style.display = 'none';
+            // คืนค่าคอลัมน์กลับมา
+            if (cls) {
+                document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.remove('d-print-none'));
+            }
         }, 500);
     }
 
