@@ -25,7 +25,7 @@
 
         /* 🖨️ ระบบ Print / PDF แนวตั้ง (Portrait) อัจฉริยะ 🖨️ */
         @media print {
-            @page { size: portrait; margin: 10mm; } /* บังคับกระดาษเป็นแนวตั้ง */
+            @page { size: portrait; margin: 10mm; } 
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn, .d-print-none { 
                 display: none !important; 
@@ -74,7 +74,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
                 <div>
                     <h3 class="fw-bold" style="color: #6d28d9;"><i class="fas fa-plus"></i> ระบบแปรงฟัน ดื่มนม ระดับชั้นอนุบาล</h3>
-                    <p class="text-muted mb-0">ติดตามกิจกรรมแปรงฟันและดื่มนมของนักเรียน</p>
+                    <p class="text-muted mb-0">ติดตามกิจกรรมแปรงฟันและดื่มนมของนักเรียน (เฉพาะคนที่มาเรียน)</p>
                 </div>
                 <div class="badge bg-light text-dark border p-2 shadow-sm fs-6" id="todayDateShow"></div>
             </div>
@@ -100,7 +100,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-bold">ระดับชั้น:</label>
-                            <select id="filterClass" class="form-select">
+                            <select id="filterClass" class="form-select" onchange="updateRoomDropdown()">
                                 <option value="">-- เลือกระดับชั้น --</option>
                                 <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
                                 <option value="อนุบาล 1">อนุบาล 1</option>
@@ -108,7 +108,7 @@
                                 <option value="อนุบาล 3">อนุบาล 3</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2" id="roomSelectContainer">
                             <label class="form-label fw-bold">ห้อง:</label>
                             <select id="filterRoom" class="form-select">
                                 <option value="">-- เลือกห้อง --</option>
@@ -117,7 +117,7 @@
                             </select>
                         </div>
                         <div class="col-md-4 text-end">
-                            <button class="btn bg-purple fw-bold shadow-sm" id="btnLoadStudents" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อ</button>
+                            <button class="btn bg-purple fw-bold shadow-sm" id="btnLoadStudents" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน</button>
                         </div>
                     </div>
 
@@ -134,8 +134,7 @@
                                 <tr>
                                     <th>รหัสนักเรียน</th>
                                     <th class="text-start">ชื่อ-นามสกุล</th>
-                                    <th>ระดับชั้น</th>
-                                    <th>แปรงฟัน</th>
+                                    <th>ชื่อเล่น</th> <th>แปรงฟัน</th>
                                     <th>ดื่มนม</th>
                                 </tr>
                             </thead>
@@ -228,7 +227,7 @@
 
     const userRole = sessionStorage.getItem('userRole') || 'Support';
     let allStudents = [];
-    let allTeachers = []; // เพิ่มตัวแปรเก็บครู
+    let allTeachers = []; 
     let rawReportData = [];
     let reportDataTable;
 
@@ -255,26 +254,54 @@
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         document.getElementById('todayDateShow').innerHTML = `<i class="far fa-calendar-alt text-primary me-1"></i> วันที่ ${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
 
-        // 🌟 ล็อกห้องและระดับชั้นให้ครูอัตโนมัติ
-        const uClass = sessionStorage.getItem('userClass');
-        const uRoom = sessionStorage.getItem('userRoom');
-        if (uClass && uClass !== "undefined") {
-            document.getElementById('filterClass').value = uClass;
-            document.getElementById('repClass').value = uClass;
-            if (userRole === 'Teacher') {
-                document.getElementById('filterClass').disabled = true;
-                document.getElementById('repClass').disabled = true;
-            }
-        }
-        if (uRoom && uRoom !== "undefined") {
-            document.getElementById('filterRoom').value = uRoom;
-            if (userRole === 'Teacher') document.getElementById('filterRoom').disabled = true;
-        }
-
         // โหลดข้อมูลนักเรียนและครูมาเตรียมไว้
-        fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { allStudents = data; });
+        fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { 
+            allStudents = data; 
+            
+            // 🌟 เซ็ตค่าห้องของครูประจำชั้น (ปลดล็อกให้เลือกได้ แต่เริ่มที่ห้องตัวเอง)
+            const uClass = sessionStorage.getItem('userClass');
+            const uRoom = sessionStorage.getItem('userRoom');
+            if (uClass && uClass !== "undefined") {
+                document.getElementById('filterClass').value = uClass;
+                document.getElementById('repClass').value = uClass;
+            }
+            updateRoomDropdown(); // คำนวณเพื่อซ่อน/แสดงห้องทันที
+            
+            if (uRoom && uRoom !== "undefined") {
+                document.getElementById('filterRoom').value = uRoom;
+            }
+        });
+        
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
     });
+
+    // 🌟 ฟังก์ชันซ่อน/แสดงห้องอัตโนมัติ และสร้างตัวเลือกห้องตามจริงที่มี
+    function updateRoomDropdown() {
+        const cls = document.getElementById('filterClass').value;
+        const roomContainer = document.getElementById('roomSelectContainer');
+        const roomSelect = document.getElementById('filterRoom');
+        
+        if (!cls) {
+            roomContainer.classList.add('d-none');
+            return;
+        }
+        
+        // หาว่าระดับชั้นนี้ มีห้องอะไรบ้างที่ไม่ว่างเปล่า
+        let roomsInClass = [...new Set(allStudents.filter(s => s.ClassLevel === cls).map(s => String(s.Room).trim()).filter(r => r !== ""))];
+        
+        if (roomsInClass.length <= 1) {
+            roomContainer.classList.add('d-none'); // มีห้องเดียว หรือไม่มีห้องย่อย ให้ซ่อนกล่องไปเลย
+            roomSelect.value = roomsInClass.length === 1 ? roomsInClass[0] : "";
+        } else {
+            roomContainer.classList.remove('d-none'); // มีหลายห้อง ให้แสดงกล่อง
+            roomSelect.innerHTML = '<option value="">-- เลือกห้อง --</option>';
+            roomsInClass.sort().forEach(r => {
+                roomSelect.innerHTML += `<option value="${r}">ห้อง ${r}</option>`;
+            });
+            // พยายามคืนค่าห้องเดิมของครู
+            if(sessionStorage.getItem('userRoom')) roomSelect.value = sessionStorage.getItem('userRoom');
+        }
+    }
 
     async function loadStudentsForRecord() {
         const dateVal = document.getElementById('recordDate').value;
@@ -292,42 +319,60 @@
             return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุดเสาร์-อาทิตย์ ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
         }
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ตรวจสอบวันหยุด...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ดึงรายชื่อ...';
         btn.disabled = true;
 
-        // ตรวจสอบวันหยุดนักขัตฤกษ์
+        // 🌟 1. แปลงวันที่เพื่อส่งไปถาม Google Sheets (DD/MM/YYYY แบบไทย)
+        const dParts = dateVal.split('-');
+        const searchDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
+
         try {
-            const res = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
-            const holidayData = await res.json();
+            // 🌟 2. ถามว่าวันนี้มีวันหยุดไหม?
+            const resHol = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
+            const holidayData = await resHol.json();
             if (holidayData.isHoliday) {
-                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
                 return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name + ' ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
             }
-        } catch(e) {} 
 
-        btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
+            // 🌟 3. ถามว่าวันนี้ใคร "มาเรียน" บ้าง?
+            const resAtt = await fetch(`${scriptURL}?action=getPresentStudents&date=${searchDate}`);
+            const attData = await resAtt.json();
+            const presentIds = attData.data || [];
 
-        const filtered = allStudents.filter(s => s.ClassLevel === cls && (rm === "" || String(s.Room) === String(rm)));
-        tbody.innerHTML = '';
+            // 🌟 4. คัดกรองเอาเฉพาะคนที่ 1.อยู่ชั้นนี้ 2.อยู่ห้องนี้ 3.รหัสตรงกับที่มาเรียน
+            const filtered = allStudents.filter(s => 
+                s.ClassLevel === cls && 
+                (rm === "" || String(s.Room) === String(rm)) &&
+                presentIds.includes(String(s.StudentId)) // บังคับว่าต้องมาเรียนเท่านั้น!
+            );
+            
+            tbody.innerHTML = '';
 
-        if(filtered.length === 0) {
-            document.getElementById('actionButtons').classList.add('d-none');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">ไม่พบรายชื่อนักเรียนในห้องนี้</td></tr>';
-            return;
-        }
+            if(filtered.length === 0) {
+                document.getElementById('actionButtons').classList.add('d-none');
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">ไม่พบข้อมูล (เด็กอาจจะขาดเรียนทั้งหมด หรือคุณยังไม่ได้เช็คชื่อเข้าเรียนในวันนี้ครับ)</td></tr>';
+                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
+                return;
+            }
 
-        document.getElementById('actionButtons').classList.remove('d-none');
-        filtered.forEach(s => {
-            let tr = `
-            <tr data-sid="${s.StudentId}" data-cls="${s.ClassLevel}" data-rm="${s.Room}">
-                <td class="fw-bold text-secondary">${s.StudentId}</td>
-                <td class="text-start fw-bold">${s.FullName}</td>
-                <td>${s.ClassLevel} ${s.Room ? '/'+s.Room : ''}</td>
-                <td><input class="form-check-input chk-brush" type="checkbox" checked></td>
-                <td><input class="form-check-input chk-milk" type="checkbox" checked></td>
-            </tr>`;
-            tbody.innerHTML += tr;
-        });
+            document.getElementById('actionButtons').classList.remove('d-none');
+            filtered.forEach(s => {
+                let tr = `
+                <tr data-sid="${s.StudentId}" data-cls="${s.ClassLevel}" data-rm="${s.Room}">
+                    <td class="fw-bold text-secondary">${s.StudentId}</td>
+                    <td class="text-start fw-bold">${s.FullName}</td>
+                    <td class="text-primary fw-bold">${s.NickName ? s.NickName : '-'}</td> <td><input class="form-check-input chk-brush" type="checkbox" checked></td>
+                    <td><input class="form-check-input chk-milk" type="checkbox" checked></td>
+                </tr>`;
+                tbody.innerHTML += tr;
+            });
+
+        } catch(e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อฐานข้อมูลล้มเหลว', 'error');
+        } 
+        
+        btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
     }
 
     function checkAll(type, isChecked) {
@@ -378,24 +423,20 @@
         });
     }
 
-    // 🌟 ระบบประมวลผลหัวกระดาษอัจฉริยะ (หาระดับชั้น, ห้องที่เหมาะสม และหาครูประจำชั้น)
     function getPrintHeaderInfo(cls, rm) {
         let roomDisplay = "";
         let teacherName = "ไม่ระบุ";
         
         if (cls) {
-            // เช็คว่าระดับชั้นนี้ มีห้องอื่นนอกจากห้อง 1 ไหม (เพื่อจะได้รู้ว่าควรใส่คำว่า ห้อง 1 ไหม)
             let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
-            
             if (rm) {
                 if (rm === '1' && !hasOtherRooms) {
-                    roomDisplay = ""; // ถ้ามีแค่ห้องเดียว ไม่ต้องใส่คำว่า (ห้อง 1)
+                    roomDisplay = ""; 
                 } else {
                     roomDisplay = `(ห้อง ${rm})`;
                 }
             }
 
-            // หาครูประจำชั้นจากฐานข้อมูล Teachers
             let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
             if (t && t.Name) {
                 teacherName = (t.Title || "") + t.Name;
@@ -404,7 +445,6 @@
         return { roomDisplay, teacherName };
     }
 
-    // 🖨️ ฟังก์ชันสำหรับออก PDF หน้าเช็คชื่อ
     function printRecordTable() {
         const dateVal = document.getElementById('recordDate').value;
         const cls = document.getElementById('filterClass').value;
@@ -415,15 +455,10 @@
         let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${roomDisplay} | ครูประจำชั้น: ${teacherName}`;
         document.getElementById('printRecordSubtitle').innerText = headerTxt;
         
-        // ซ่อนคอลัมน์ "ระดับชั้น" (คอลัมน์ที่ 3) ชั่วคราวเฉพาะตอนปริ๊น
-        document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.add('d-print-none'));
-
         document.getElementById('printRecordHeader').style.display = 'block';
         setTimeout(function() {
             window.print();
             document.getElementById('printRecordHeader').style.display = 'none';
-            // คืนค่าคอลัมน์ให้กลับมาแสดงปกติ
-            document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.remove('d-print-none'));
         }, 500);
     }
 
@@ -523,7 +558,6 @@
         });
     }
 
-    // 🖨️ ฟังก์ชันสำหรับออก PDF หน้าตารางรายงาน
     function printReport() {
         if(!reportDataTable || reportDataTable.rows().count() === 0) {
             Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับพิมพ์ กรุณากรองข้อมูลก่อน', 'warning');
@@ -545,7 +579,6 @@
         if (cls) {
             const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, "");
             classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}`;
-            // ซ่อนคอลัมน์ระดับชั้นในตารางรายงาน (คอลัมน์ที่ 4)
             document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.add('d-print-none'));
         }
 
@@ -560,7 +593,6 @@
             window.print();
             reportDataTable.page.len(oldLength).draw(false); 
             document.getElementById('printReportHeader').style.display = 'none';
-            // คืนค่าคอลัมน์กลับมา
             if (cls) {
                 document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.remove('d-print-none'));
             }
