@@ -32,7 +32,7 @@
             }
             .col-md-10 { width: 100% !important; padding: 0 !important; }
             .card-box { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 15px; }
             
             table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
             th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
@@ -40,7 +40,7 @@
             .text-success { color: #198754 !important; font-weight: bold; }
             .text-danger { color: #dc3545 !important; font-weight: bold; }
 
-            /* 🌟 บังคับตัดหน้ากระดาษทุกๆ 30 คน */
+            /* บังคับตัดหน้ากระดาษทุกๆ 30 คน */
             tbody tr:nth-child(30n) { page-break-after: always; }
         }
     </style>
@@ -53,7 +53,6 @@
 
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="text-center mb-4">
                 <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -70,7 +69,6 @@
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-10 p-4">
             
             <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
@@ -88,7 +86,6 @@
 
             <div class="tab-content card-box p-4" id="myTabContent">
                 
-                <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                 <div class="tab-pane fade show active" id="record">
                     <div id="printRecordHeader" class="print-header" style="display: none;">
                         <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
@@ -149,12 +146,16 @@
                     </div>
                 </div>
 
-                <!-- 🌟 Tab 2: หน้ารายงานผล -->
                 <div class="tab-pane fade" id="report">
                     <div id="printReportHeader" class="print-header" style="display: none;">
                         <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
                         <h2 class="fw-bold text-dark">รายงานสรุปการแปรงฟันและดื่มนม</h2>
-                        <h6 id="printReportSubtitle" class="text-secondary mt-2">ประจำช่วงเวลา: -</h6>
+                        <h6 id="printReportSubtitle" class="text-secondary mt-2 mb-3">ประจำช่วงเวลา: -</h6>
+                        
+                        <div class="d-flex justify-content-around border-top border-bottom py-2 mb-3">
+                            <div><strong class="text-dark">สรุปแปรงฟัน:</strong> <span id="printBrushPercent" class="text-success fs-5 fw-bold">0%</span> <span id="printBrushText" class="text-muted">(0/0)</span></div>
+                            <div><strong class="text-dark">สรุปดื่มนม:</strong> <span id="printMilkPercent" class="text-primary fs-5 fw-bold">0%</span> <span id="printMilkText" class="text-muted">(0/0)</span></div>
+                        </div>
                     </div>
 
                     <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
@@ -259,10 +260,8 @@
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         document.getElementById('todayDateShow').innerHTML = `<i class="far fa-calendar-alt text-primary me-1"></i> วันที่ ${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
 
-        // โหลดข้อมูลนักเรียนและครูมาเตรียมไว้
         fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { 
             allStudents = data; 
-            
             const uClass = sessionStorage.getItem('userClass');
             const uRoom = sessionStorage.getItem('userRoom');
             if (uClass && uClass !== "undefined") {
@@ -270,10 +269,7 @@
                 document.getElementById('repClass').value = uClass;
             }
             updateRoomDropdown(); 
-            
-            if (uRoom && uRoom !== "undefined") {
-                document.getElementById('filterRoom').value = uRoom;
-            }
+            if (uRoom && uRoom !== "undefined") document.getElementById('filterRoom').value = uRoom;
         });
         
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
@@ -365,10 +361,7 @@
                 tbody.innerHTML += tr;
             });
 
-        } catch(e) {
-            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อฐานข้อมูลล้มเหลว', 'error');
-        } 
-        
+        } catch(e) { Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อฐานข้อมูลล้มเหลว', 'error'); } 
         btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
     }
 
@@ -383,7 +376,6 @@
     function saveRoutine() {
         const btn = document.getElementById('btnSaveRoutine');
         const dateVal = document.getElementById('recordDate').value;
-
         const dParts = dateVal.split('-');
         const formattedDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
 
@@ -412,9 +404,7 @@
                 Swal.fire('สำเร็จ', data.message, 'success').then((result) => {
                     if (result.isConfirmed) { printRecordTable(); }
                 });
-            } else {
-                Swal.fire('ผิดพลาด', data.message, 'error');
-            }
+            } else { Swal.fire('ผิดพลาด', data.message, 'error'); }
         }).finally(() => {
             btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false;
         });
@@ -423,21 +413,14 @@
     function getPrintHeaderInfo(cls, rm) {
         let roomDisplay = "";
         let teacherName = "ไม่ระบุ";
-        
         if (cls) {
             let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
             if (rm) {
-                if (rm === '1' && !hasOtherRooms) {
-                    roomDisplay = ""; 
-                } else {
-                    roomDisplay = `(ห้อง ${rm})`;
-                }
+                if (rm === '1' && !hasOtherRooms) roomDisplay = ""; 
+                else roomDisplay = `(ห้อง ${rm})`;
             }
-
             let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
-            if (t && t.Name) {
-                teacherName = (t.Title || "") + t.Name;
-            }
+            if (t && t.Name) teacherName = (t.Title || "") + t.Name;
         }
         return { roomDisplay, teacherName };
     }
@@ -452,7 +435,6 @@
         let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${roomDisplay} | ครูประจำชั้น: ${teacherName}`;
         document.getElementById('printRecordSubtitle').innerText = headerTxt;
         
-        // ตอนปริ๊นหน้าเช็คชื่อ ให้ซ่อนคอลัมน์ชื่อเล่น (คอลัมน์ 3) 
         document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.add('d-print-none'));
 
         document.getElementById('printRecordHeader').style.display = 'block';
@@ -470,20 +452,14 @@
         
         if (dStr.includes('/')) { 
             let parts = dStr.split(' ')[0].split('/');
-            d = parseInt(parts[0], 10);
-            m = parseInt(parts[1], 10) - 1;
-            y = parseInt(parts[2], 10);
+            d = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1; y = parseInt(parts[2], 10);
             if (y > 2400) y -= 543;
         } else if (dStr.includes('-') && !dStr.includes('T')) { 
             let parts = dStr.split('-');
-            y = parseInt(parts[0], 10);
-            m = parseInt(parts[1], 10) - 1;
-            d = parseInt(parts[2], 10);
+            y = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1; d = parseInt(parts[2], 10);
         } else { 
             let temp = new Date(dStr);
-            if (!isNaN(temp.getTime())) {
-                y = temp.getFullYear(); m = temp.getMonth(); d = temp.getDate();
-            }
+            if (!isNaN(temp.getTime())) { y = temp.getFullYear(); m = temp.getMonth(); d = temp.getDate(); }
         }
         return new Date(y, m, d, isEndOfDay ? 23 : 0, isEndOfDay ? 59 : 0, 0).getTime();
     }
@@ -526,8 +502,7 @@
         filtered = filtered.map(r => {
             let studentInfo = allStudents.find(s => String(s.StudentId) === String(r.StudentId));
             return {
-                ...r,
-                FullName: studentInfo ? studentInfo.FullName : 'ไม่ทราบชื่อ'
+                ...r, FullName: studentInfo ? studentInfo.FullName : 'ไม่ทราบชื่อ'
             };
         });
 
@@ -538,10 +513,17 @@
         let bPercent = totalCount === 0 ? 0 : Math.round((brushCount / totalCount) * 100);
         let mPercent = totalCount === 0 ? 0 : Math.round((milkCount / totalCount) * 100);
 
+        // อัปเดตยอดหน้าเว็บ
         document.getElementById('brushPercent').innerText = bPercent + '%';
         document.getElementById('brushText').innerText = `${brushCount} / ${totalCount} รายการ`;
         document.getElementById('milkPercent').innerText = mPercent + '%';
         document.getElementById('milkText').innerText = `${milkCount} / ${totalCount} รายการ`;
+
+        // 🌟 อัปเดตยอดสำหรับหน้า PDF
+        document.getElementById('printBrushPercent').innerText = bPercent + '%';
+        document.getElementById('printBrushText').innerText = `(${brushCount}/${totalCount})`;
+        document.getElementById('printMilkPercent').innerText = mPercent + '%';
+        document.getElementById('printMilkText').innerText = `(${milkCount}/${totalCount})`;
 
         if (reportDataTable) reportDataTable.destroy();
         reportDataTable = $('#reportTable').DataTable({
@@ -550,9 +532,7 @@
                 { 
                     data: 'Date', 
                     render: function(data, type, row) { 
-                        if (type === 'sort' || type === 'type') {
-                            return getSafeTime(data, false);
-                        }
+                        if (type === 'sort' || type === 'type') return getSafeTime(data, false);
                         return formatDisplayDate(data); 
                     } 
                 },
@@ -563,11 +543,10 @@
                 { data: 'DrankMilk', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> ดื่ม</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่ดื่ม</span>' }
             ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
-            order: [[0, 'asc']] // 🌟 ปรับให้เรียงจากวันที่ เก่า -> ใหม่ แล้วครับ
+            order: [[0, 'asc']] 
         });
     }
 
-    // 🌟 ดึงชื่อครูสำหรับหน้ารายงานผล
     function getTeacherByClass(cls) {
         let t = allTeachers.find(t => t.AssignedClass === cls);
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
@@ -594,7 +573,6 @@
         if (cls) {
             let tName = getTeacherByClass(cls);
             classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${tName}`;
-            // 🌟 ซ่อนคอลัมน์ระดับชั้นในตารางรายงานตอนปริ๊น
             document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.add('d-print-none'));
         }
 
@@ -610,7 +588,6 @@
             reportDataTable.page.len(oldLength).draw(false); 
             document.getElementById('printReportHeader').style.display = 'none';
             if (cls) {
-                // คืนค่าคอลัมน์กลับมา
                 document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.remove('d-print-none'));
             }
         }, 500);
