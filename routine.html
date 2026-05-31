@@ -27,12 +27,12 @@
         @media print {
             @page { size: landscape; margin: 1cm; }
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn { 
+            .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn, .d-print-none { 
                 display: none !important; 
             }
             .col-md-10 { width: 100% !important; padding: 0 !important; }
             .card-box { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            #printHeader { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
             table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
             th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
             th { background-color: #d8b4fe !important; }
@@ -66,11 +66,7 @@
         </div>
 
         <div class="col-md-10 p-4">
-            <div id="printHeader" style="display: none;">
-                <h2 class="fw-bold">รายงานผลการแปรงฟันและดื่มนม</h2>
-                <h5 id="printSubtitle" class="text-secondary">ประจำช่วงเวลา: -</h5>
-            </div>
-
+            
             <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
                 <div>
                     <h3 class="fw-bold" style="color: #6d28d9;"><i class="fas fa-plus"></i> ระบบแปรงฟัน ดื่มนม ระดับชั้นอนุบาล</h3>
@@ -87,6 +83,11 @@
             <div class="tab-content card-box p-4" id="myTabContent">
                 
                 <div class="tab-pane fade show active" id="record">
+                    <div id="printRecordHeader" class="print-header" style="display: none;">
+                        <h2 class="fw-bold">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
+                        <h5 id="printRecordSubtitle" class="text-secondary">วันที่: -</h5>
+                    </div>
+
                     <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
                         <div class="col-md-3">
                             <label class="form-label fw-bold">วันที่บันทึก:</label>
@@ -111,13 +112,13 @@
                             </select>
                         </div>
                         <div class="col-md-4 text-end">
-                            <button class="btn bg-purple fw-bold shadow-sm" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อ</button>
+                            <button class="btn bg-purple fw-bold shadow-sm" id="btnLoadStudents" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อ</button>
                         </div>
                     </div>
 
                     <div id="actionButtons" class="mb-3 d-none gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="checkAll('chk-brush', true)"><i class="fas fa-check"></i> เลือกแปรงฟันทั้งหมด</button>
-                        <button class="btn btn-sm btn-outline-info" onclick="checkAll('chk-milk', true)"><i class="fas fa-check"></i> เลือกดื่มนมทั้งหมด</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="checkAll('chk-brush', true)"><i class="fas fa-check"></i> แปรงฟันทั้งหมด</button>
+                        <button class="btn btn-sm btn-outline-info" onclick="checkAll('chk-milk', true)"><i class="fas fa-check"></i> ดื่มนมทั้งหมด</button>
                         <button class="btn btn-sm btn-outline-secondary" onclick="checkAll('both', false)"><i class="fas fa-times"></i> ยกเลิกทั้งหมด</button>
                         <button class="btn btn-warning fw-bold ms-auto" id="btnSaveRoutine" onclick="saveRoutine()"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
                     </div>
@@ -141,6 +142,11 @@
                 </div>
 
                 <div class="tab-pane fade" id="report">
+                    <div id="printReportHeader" class="print-header" style="display: none;">
+                        <h2 class="fw-bold">รายงานสรุปการแปรงฟันและดื่มนม</h2>
+                        <h5 id="printReportSubtitle" class="text-secondary">ประจำช่วงเวลา: -</h5>
+                    </div>
+
                     <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
                         <div class="col-md-3">
                             <label class="form-label fw-bold small">ตั้งแต่วันที่:</label>
@@ -242,20 +248,56 @@
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         document.getElementById('todayDateShow').innerHTML = `<i class="far fa-calendar-alt text-primary me-1"></i> วันที่ ${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
 
+        // 🌟 ล็อกห้องและระดับชั้นให้ครูอัตโนมัติ
         const uClass = sessionStorage.getItem('userClass');
         const uRoom = sessionStorage.getItem('userRoom');
-        if (uClass && uClass !== "undefined") document.getElementById('filterClass').value = uClass;
-        if (uRoom && uRoom !== "undefined") document.getElementById('filterRoom').value = uRoom;
+        if (uClass && uClass !== "undefined") {
+            document.getElementById('filterClass').value = uClass;
+            document.getElementById('repClass').value = uClass;
+            if (userRole === 'Teacher') {
+                document.getElementById('filterClass').disabled = true;
+                document.getElementById('repClass').disabled = true;
+            }
+        }
+        if (uRoom && uRoom !== "undefined") {
+            document.getElementById('filterRoom').value = uRoom;
+            if (userRole === 'Teacher') document.getElementById('filterRoom').disabled = true;
+        }
 
         fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { allStudents = data; });
     });
 
-    function loadStudentsForRecord() {
+    // 🌟 เช็ควันหยุดก่อนดึงรายชื่อ
+    async function loadStudentsForRecord() {
+        const dateVal = document.getElementById('recordDate').value;
         const cls = document.getElementById('filterClass').value;
         const rm = document.getElementById('filterRoom').value;
         const tbody = document.getElementById('recordTableBody');
-        
+        const btn = document.getElementById('btnLoadStudents');
+
+        if(!dateVal) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึก', 'warning');
         if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้น', 'warning');
+
+        // ตรวจสอบวันเสาร์-อาทิตย์
+        const checkDate = new Date(dateVal);
+        if(checkDate.getDay() === 0 || checkDate.getDay() === 6) {
+            return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุดเสาร์-อาทิตย์ ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
+        }
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ตรวจสอบวันหยุด...';
+        btn.disabled = true;
+
+        // ตรวจสอบวันหยุดนักขัตฤกษ์จาก Google Sheets
+        try {
+            const res = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
+            const holidayData = await res.json();
+            if (holidayData.isHoliday) {
+                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
+                return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name + ' ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
+            }
+        } catch(e) {} // ข้ามไปถ้าระบบเช็ควันหยุดพัง
+
+        btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อ'; btn.disabled = false;
 
         const filtered = allStudents.filter(s => s.ClassLevel === cls && (rm === "" || String(s.Room) === String(rm)));
         tbody.innerHTML = '';
@@ -291,7 +333,6 @@
     function saveRoutine() {
         const btn = document.getElementById('btnSaveRoutine');
         const dateVal = document.getElementById('recordDate').value;
-        if(!dateVal) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึก', 'warning');
 
         const dParts = dateVal.split('-');
         const formattedDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
@@ -317,44 +358,64 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.status === 'success') Swal.fire('สำเร็จ', data.message, 'success');
-            else Swal.fire('ผิดพลาด', data.message, 'error');
+            if(data.status === 'success') {
+                // 🌟 พอกด OK ปุ๊บ เด้งหน้าปริ๊นทันที!
+                Swal.fire('สำเร็จ', data.message, 'success').then((result) => {
+                    if (result.isConfirmed) { printRecordTable(); }
+                });
+            } else {
+                Swal.fire('ผิดพลาด', data.message, 'error');
+            }
         }).finally(() => {
             btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false;
         });
     }
 
-    // 🌟 1. ฟังก์ชันคำนวณหาวันที่และเวลาแบบ 100% ปลอดภัยจาก Timezone
+    // 🖨️ ฟังก์ชันสำหรับออก PDF / ปริ๊น หน้าเช็คชื่อ (หลังเซฟเสร็จ)
+    function printRecordTable() {
+        const dateVal = document.getElementById('recordDate').value;
+        const cls = document.getElementById('filterClass').value;
+        const rm = document.getElementById('filterRoom').value;
+        
+        let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${rm ? '(ห้อง '+rm+')' : ''}`;
+        document.getElementById('printRecordSubtitle').innerText = headerTxt;
+        
+        document.getElementById('printRecordHeader').style.display = 'block';
+        setTimeout(function() {
+            window.print();
+            document.getElementById('printRecordHeader').style.display = 'none';
+        }, 500);
+    }
+
+    // 🌟 ระบบแกะวันที่แบบครอบจักรวาล (เวอร์ชันที่สมบูรณ์แบบไร้ Timezone)
     function getSafeTime(val, isEndOfDay) {
         if (!val) return isEndOfDay ? Infinity : 0;
-        let dStr = String(val).trim().replace(/'/g, ""); // ลบ Single Quote ทิ้ง
+        let dStr = String(val).trim().replace(/'/g, ""); 
         let y = 1970, m = 0, d = 1;
         
-        if (dStr.includes('/')) { // กรณีเป็น 29/05/2569
+        if (dStr.includes('/')) { 
             let parts = dStr.split(' ')[0].split('/');
             d = parseInt(parts[0], 10);
             m = parseInt(parts[1], 10) - 1;
             y = parseInt(parts[2], 10);
             if (y > 2400) y -= 543;
-        } else if (dStr.includes('-') && !dStr.includes('T')) { // กรณีเป็น YYYY-MM-DD จาก Input
+        } else if (dStr.includes('-') && !dStr.includes('T')) { 
             let parts = dStr.split('-');
             y = parseInt(parts[0], 10);
             m = parseInt(parts[1], 10) - 1;
             d = parseInt(parts[2], 10);
-        } else { // กรณีเป็น ISO สากล
+        } else { 
             let temp = new Date(dStr);
             if (!isNaN(temp.getTime())) {
                 y = temp.getFullYear(); m = temp.getMonth(); d = temp.getDate();
             }
         }
-        // บังคับให้เป็น 00:00:00 (เริ่มวัน) หรือ 23:59:59 (สิ้นสุดวัน)
         return new Date(y, m, d, isEndOfDay ? 23 : 0, isEndOfDay ? 59 : 0, 0).getTime();
     }
 
-    // 🌟 2. ฟังก์ชันโชว์วันที่หน้าตาราง (ง่ายๆ ตามที่คุณบอก!)
     function formatDisplayDate(val) {
         let dStr = String(val).trim().replace(/'/g, "");
-        if (dStr.includes('/')) return dStr.split(' ')[0]; // ถ้ามี / โชว์เลย! ไม่ต้องคิดเยอะ!
+        if (dStr.includes('/')) return dStr.split(' ')[0]; 
         let temp = new Date(dStr);
         if (!isNaN(temp.getTime())) return `${String(temp.getDate()).padStart(2,'0')}/${String(temp.getMonth()+1).padStart(2,'0')}/${temp.getFullYear()+543}`;
         return dStr;
@@ -380,7 +441,6 @@
         const sTime = getSafeTime(startRaw, false);
         const eTime = getSafeTime(endRaw, true);
 
-        // คัดกรองข้อมูลอย่างแม่นยำ
         let filtered = rawReportData.filter(r => {
             let rTime = getSafeTime(r.Date, false);
             let matchDate = (rTime >= sTime && rTime <= eTime);
@@ -388,7 +448,6 @@
             return matchDate && matchClass;
         });
 
-        // นำข้อมูลชื่อ-นามสกุลจาก allStudents มา Map ใส่เข้าไป
         filtered = filtered.map(r => {
             let studentInfo = allStudents.find(s => String(s.StudentId) === String(r.StudentId));
             return {
@@ -425,7 +484,7 @@
         });
     }
 
-    // 🖨️ ฟังก์ชันสำหรับออกรายงาน PDF / พิมพ์
+    // 🖨️ ฟังก์ชันสำหรับออก PDF หน้าตารางรายงาน
     function printReport() {
         if(!reportDataTable || reportDataTable.rows().count() === 0) {
             Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับพิมพ์ กรุณากรองข้อมูลก่อน', 'warning');
@@ -444,14 +503,17 @@
         }
 
         let classText = cls ? ` ระดับชั้น ${cls}` : "";
-        document.getElementById('printSubtitle').innerText = `${dateText}${classText}`;
+        document.getElementById('printReportSubtitle').innerText = `${dateText}${classText}`;
 
         const oldLength = reportDataTable.page.len();
         reportDataTable.page.len(-1).draw(false);
 
+        document.getElementById('printReportHeader').style.display = 'block';
+
         setTimeout(function() {
             window.print();
             reportDataTable.page.len(oldLength).draw(false); 
+            document.getElementById('printReportHeader').style.display = 'none';
         }, 500);
     }
 
