@@ -53,6 +53,7 @@
 
 <div class="container-fluid">
     <div class="row">
+        <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="text-center mb-4">
                 <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -69,6 +70,7 @@
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
 
+        <!-- Main Content -->
         <div class="col-md-10 p-4">
             
             <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
@@ -86,6 +88,7 @@
 
             <div class="tab-content card-box p-4" id="myTabContent">
                 
+                <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                 <div class="tab-pane fade show active" id="record">
                     <div id="printRecordHeader" class="print-header" style="display: none;">
                         <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
@@ -134,7 +137,8 @@
                                 <tr>
                                     <th>รหัสนักเรียน</th>
                                     <th class="text-start">ชื่อ-นามสกุล</th>
-                                    <th>ชื่อเล่น</th> <th>แปรงฟัน</th>
+                                    <th>ชื่อเล่น</th>
+                                    <th>แปรงฟัน</th>
                                     <th>ดื่มนม</th>
                                 </tr>
                             </thead>
@@ -145,6 +149,7 @@
                     </div>
                 </div>
 
+                <!-- 🌟 Tab 2: หน้ารายงานผล -->
                 <div class="tab-pane fade" id="report">
                     <div id="printReportHeader" class="print-header" style="display: none;">
                         <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
@@ -258,14 +263,13 @@
         fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { 
             allStudents = data; 
             
-            // 🌟 เซ็ตค่าห้องของครูประจำชั้น (ปลดล็อกให้เลือกได้ แต่เริ่มที่ห้องตัวเอง)
             const uClass = sessionStorage.getItem('userClass');
             const uRoom = sessionStorage.getItem('userRoom');
             if (uClass && uClass !== "undefined") {
                 document.getElementById('filterClass').value = uClass;
                 document.getElementById('repClass').value = uClass;
             }
-            updateRoomDropdown(); // คำนวณเพื่อซ่อน/แสดงห้องทันที
+            updateRoomDropdown(); 
             
             if (uRoom && uRoom !== "undefined") {
                 document.getElementById('filterRoom').value = uRoom;
@@ -275,7 +279,6 @@
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
     });
 
-    // 🌟 ฟังก์ชันซ่อน/แสดงห้องอัตโนมัติ และสร้างตัวเลือกห้องตามจริงที่มี
     function updateRoomDropdown() {
         const cls = document.getElementById('filterClass').value;
         const roomContainer = document.getElementById('roomSelectContainer');
@@ -286,19 +289,17 @@
             return;
         }
         
-        // หาว่าระดับชั้นนี้ มีห้องอะไรบ้างที่ไม่ว่างเปล่า
         let roomsInClass = [...new Set(allStudents.filter(s => s.ClassLevel === cls).map(s => String(s.Room).trim()).filter(r => r !== ""))];
         
         if (roomsInClass.length <= 1) {
-            roomContainer.classList.add('d-none'); // มีห้องเดียว หรือไม่มีห้องย่อย ให้ซ่อนกล่องไปเลย
+            roomContainer.classList.add('d-none'); 
             roomSelect.value = roomsInClass.length === 1 ? roomsInClass[0] : "";
         } else {
-            roomContainer.classList.remove('d-none'); // มีหลายห้อง ให้แสดงกล่อง
+            roomContainer.classList.remove('d-none'); 
             roomSelect.innerHTML = '<option value="">-- เลือกห้อง --</option>';
             roomsInClass.sort().forEach(r => {
                 roomSelect.innerHTML += `<option value="${r}">ห้อง ${r}</option>`;
             });
-            // พยายามคืนค่าห้องเดิมของครู
             if(sessionStorage.getItem('userRoom')) roomSelect.value = sessionStorage.getItem('userRoom');
         }
     }
@@ -313,7 +314,6 @@
         if(!dateVal) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึก', 'warning');
         if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้น', 'warning');
 
-        // ตรวจสอบวันเสาร์-อาทิตย์
         const checkDate = new Date(dateVal);
         if(checkDate.getDay() === 0 || checkDate.getDay() === 6) {
             return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุดเสาร์-อาทิตย์ ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
@@ -322,12 +322,10 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ดึงรายชื่อ...';
         btn.disabled = true;
 
-        // 🌟 1. แปลงวันที่เพื่อส่งไปถาม Google Sheets (DD/MM/YYYY แบบไทย)
         const dParts = dateVal.split('-');
         const searchDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
 
         try {
-            // 🌟 2. ถามว่าวันนี้มีวันหยุดไหม?
             const resHol = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
             const holidayData = await resHol.json();
             if (holidayData.isHoliday) {
@@ -335,16 +333,14 @@
                 return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name + ' ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
             }
 
-            // 🌟 3. ถามว่าวันนี้ใคร "มาเรียน" บ้าง?
             const resAtt = await fetch(`${scriptURL}?action=getPresentStudents&date=${searchDate}`);
             const attData = await resAtt.json();
             const presentIds = attData.data || [];
 
-            // 🌟 4. คัดกรองเอาเฉพาะคนที่ 1.อยู่ชั้นนี้ 2.อยู่ห้องนี้ 3.รหัสตรงกับที่มาเรียน
             const filtered = allStudents.filter(s => 
                 s.ClassLevel === cls && 
                 (rm === "" || String(s.Room) === String(rm)) &&
-                presentIds.includes(String(s.StudentId)) // บังคับว่าต้องมาเรียนเท่านั้น!
+                presentIds.includes(String(s.StudentId)) 
             );
             
             tbody.innerHTML = '';
@@ -362,7 +358,8 @@
                 <tr data-sid="${s.StudentId}" data-cls="${s.ClassLevel}" data-rm="${s.Room}">
                     <td class="fw-bold text-secondary">${s.StudentId}</td>
                     <td class="text-start fw-bold">${s.FullName}</td>
-                    <td class="text-primary fw-bold">${s.NickName ? s.NickName : '-'}</td> <td><input class="form-check-input chk-brush" type="checkbox" checked></td>
+                    <td class="text-primary fw-bold">${s.NickName ? s.NickName : '-'}</td> 
+                    <td><input class="form-check-input chk-brush" type="checkbox" checked></td>
                     <td><input class="form-check-input chk-milk" type="checkbox" checked></td>
                 </tr>`;
                 tbody.innerHTML += tr;
@@ -455,10 +452,14 @@
         let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${roomDisplay} | ครูประจำชั้น: ${teacherName}`;
         document.getElementById('printRecordSubtitle').innerText = headerTxt;
         
+        // ตอนปริ๊นหน้าเช็คชื่อ ให้ซ่อนคอลัมน์ชื่อเล่น (คอลัมน์ 3) 
+        document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.add('d-print-none'));
+
         document.getElementById('printRecordHeader').style.display = 'block';
         setTimeout(function() {
             window.print();
             document.getElementById('printRecordHeader').style.display = 'none';
+            document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.remove('d-print-none'));
         }, 500);
     }
 
@@ -546,7 +547,15 @@
         reportDataTable = $('#reportTable').DataTable({
             data: filtered,
             columns: [
-                { data: 'Date', render: function(data) { return formatDisplayDate(data); } },
+                { 
+                    data: 'Date', 
+                    render: function(data, type, row) { 
+                        if (type === 'sort' || type === 'type') {
+                            return getSafeTime(data, false);
+                        }
+                        return formatDisplayDate(data); 
+                    } 
+                },
                 { data: 'StudentId' },
                 { data: 'FullName', className: 'text-start fw-bold' }, 
                 { data: null, render: (data, type, row) => `${row.ClassLevel} ${row.Room ? '(ห้อง '+row.Room+')' : ''}` },
@@ -554,8 +563,14 @@
                 { data: 'DrankMilk', render: data => String(data).includes("✅") ? '<span class="text-success fw-bold"><i class="fas fa-check"></i> ดื่ม</span>' : '<span class="text-danger"><i class="fas fa-times"></i> ไม่ดื่ม</span>' }
             ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' },
-            order: [[0, 'desc']] 
+            order: [[0, 'asc']] // 🌟 ปรับให้เรียงจากวันที่ เก่า -> ใหม่ แล้วครับ
         });
+    }
+
+    // 🌟 ดึงชื่อครูสำหรับหน้ารายงานผล
+    function getTeacherByClass(cls) {
+        let t = allTeachers.find(t => t.AssignedClass === cls);
+        return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
     function printReport() {
@@ -577,8 +592,9 @@
 
         let classText = "";
         if (cls) {
-            const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, "");
-            classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}`;
+            let tName = getTeacherByClass(cls);
+            classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${tName}`;
+            // 🌟 ซ่อนคอลัมน์ระดับชั้นในตารางรายงานตอนปริ๊น
             document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.add('d-print-none'));
         }
 
@@ -594,6 +610,7 @@
             reportDataTable.page.len(oldLength).draw(false); 
             document.getElementById('printReportHeader').style.display = 'none';
             if (cls) {
+                // คืนค่าคอลัมน์กลับมา
                 document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.remove('d-print-none'));
             }
         }, 500);
