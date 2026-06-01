@@ -38,7 +38,6 @@
 
             .day-page, .crosstab-page { page-break-after: always; width: 100%; position: relative; }
             
-            /* 🌟 บีบ Padding ตารางลง เพื่อให้จุได้ 28 บรรทัด 🌟 */
             .print-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
             .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3.5px 5px !important; color: black !important; vertical-align: middle; }
             .print-table th { font-weight: bold; text-align: center; }
@@ -468,7 +467,6 @@
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
-    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (อัปเกรดจุได้ 28 คน) 🌟 =================
     function printCrossTab(type) {
         if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
 
@@ -530,14 +528,13 @@
         let percent = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
 
         let html = '';
-        const chunk = 28; // 🌟 เพิ่มเป็น 28 คนเพื่อรองรับห้องที่เด็กเยอะ
+        const chunk = 28; 
         
         for(let i=0; i<students.length; i+=chunk) {
             let stdChunk = students.slice(i, i+chunk);
             
             html += `<div class="crosstab-page">`;
             
-            // 🌟 ปรับ Header ให้กระชับขึ้น 🌟
             html += `<div class="text-center mb-1">`;
             html += `<h5 class="fw-bold m-0 text-dark">ศพด.ทม.ทับกวาง (ป่าไผ่)</h5>`;
             html += `<h4 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h4>`;
@@ -545,8 +542,8 @@
             html += `<p class="m-0 fw-bold" style="font-size: 12px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
             html += `</div>`;
 
-            // 🌟 เพิ่มหมายเหตุมุมขวาบน 🌟
-            html += `<div class="text-end mb-1"><span style="font-size: 10px; color: #666;">* หมายเหตุ: เครื่องหมาย <strong>-</strong> หมายถึง ไม่มาเรียน (ไม่มีข้อมูลการทำกิจกรรม)</span></div>`;
+            // 🌟 แก้ไขหมายเหตุให้ชัดเจนเรื่องมาเรียน/ไม่มาเรียน 🌟
+            html += `<div class="text-end mb-1"><span style="font-size: 10px; color: #666;">หมายเหตุ: เครื่องหมาย <strong class="text-danger">X</strong> = มาเรียนแต่ไม่ทำกิจกรรม, <strong>*</strong> = ไม่มาเรียน (ไม่มีข้อมูล)</span></div>`;
 
             html += `<table class="print-table w-100" style="font-size: 11px;">`;
             html += `<thead>`;
@@ -583,12 +580,17 @@
                         if(!isBrush && String(rec.DrankMilk).includes("✅")) checked = true;
                     }
                     
-                    if(checked) {
-                        html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
-                        total++;
+                    if(rec) {
+                        // 🌟 มีข้อมูลการมาเรียน
+                        if(checked) {
+                            html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
+                            total++;
+                        } else {
+                            html += `<td class="text-center fw-bold text-danger">X</td>`; // มาแต่ไม่แปรง
+                        }
                     } else {
-                        // ถ้าไม่มีข้อมูลในระบบเลย (คือไม่ได้มาเรียน)
-                        html += `<td class="text-center text-secondary" style="font-size: 10px;">-</td>`;
+                        // 🌟 ไม่มีข้อมูล = ไม่มาเรียน (ใส่ดอกจัน)
+                        html += `<td class="text-center text-secondary fw-bold" style="font-size: 14px;">*</td>`;
                     }
                 });
                 
@@ -599,7 +601,6 @@
         }
 
         document.getElementById('crosstabPrintArea').innerHTML = html;
-        // 🌟 ปรับ margin ของกระดาษให้บางลงเพื่อให้รับได้ 28 บรรทัด
         document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 8mm 10mm; }';
         
         document.body.classList.add('printing-crosstab');
