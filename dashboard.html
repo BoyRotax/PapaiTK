@@ -27,7 +27,7 @@
 
         /* ================= 🖨️ ระบบ Smart Print สำหรับตารางรับ-ส่ง ================= */
         @media print {
-            @page { size: portrait; margin: 15mm; }
+            @page { size: portrait; margin: 12mm; }
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
             /* ซ่อนหน้าแดชบอร์ดหลักทั้งหมด */
@@ -37,8 +37,8 @@
             #monthlyPrintArea { display: block !important; width: 100%; }
             
             .day-page { page-break-after: always; width: 100%; position: relative; }
-            .print-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
-            .print-table th, .print-table td { border: 1.5px solid #333 !important; padding: 8px; color: black !important; vertical-align: middle; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 6px; color: black !important; vertical-align: middle; }
             .print-table th { background-color: #e2e8f0 !important; text-align: center; font-weight: bold; }
         }
     </style>
@@ -264,6 +264,15 @@
     document.getElementById('roleBadge').className = `badge ${badgeColor} fs-7 p-2 rounded-pill shadow-sm`;
     document.getElementById('displayUserName').innerText = userName + ' (' + roleThai + ')';
 
+    let dataTable; 
+    let grandTotalStudents = 0;
+    let grandTotalMale = 0;
+    let grandTotalFemale = 0;
+    
+    // 🌟 ตัวแปรเก็บข้อมูลนักเรียนและครูทั้งหมด
+    let allStudents = [];
+    let allTeachers = [];
+
     function logout() {
         sessionStorage.clear();
         window.location.href = 'index.html';
@@ -290,11 +299,6 @@
         window.location.href = 'https://boyrotax.github.io/uuSPStudents/sp_dashboard.html';
     }
 
-    let dataTable; 
-    let grandTotalStudents = 0;
-    let grandTotalMale = 0;
-    let grandTotalFemale = 0;
-
     function updateSummaryCards() {
         if(!dataTable) return;
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
@@ -311,6 +315,7 @@
         fetch(scriptURL + '?action=getStudents')
             .then(res => res.json())
             .then(data => {
+                allStudents = data; // เก็บลงตัวแปรโกลบอล
                 grandTotalStudents = data.length;
                 grandTotalMale = data.filter(s => s.Gender === 'ชาย').length;
                 grandTotalFemale = data.filter(s => s.Gender === 'หญิง').length;
@@ -373,6 +378,7 @@
         fetch(scriptURL + '?action=getTeachers')
             .then(res => res.json())
             .then(data => {
+                allTeachers = data; // เก็บลงตัวแปรโกลบอล
                 document.getElementById('totalTeachers').innerText = data.length;
             });
     }
@@ -407,6 +413,30 @@
         return result.trim();
     }
 
+    // ================= 🌟 ฟังก์ชันหาชื่อครูและห้อง =================
+    function getPrintHeaderInfo(cls, rm) {
+        let roomDisplay = "";
+        let teacherName = "ไม่ระบุ";
+        
+        if (cls) {
+            let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
+            if (rm) {
+                if (rm === '1' && !hasOtherRooms) {
+                    roomDisplay = ""; // ถ้ามีแค่ห้อง 1 อย่างเดียว ไม่ต้องโชว์
+                } else {
+                    roomDisplay = ` (ห้อง ${rm})`;
+                }
+            }
+
+            // หาครูประจำชั้น
+            let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
+            if (t && t.Name) {
+                teacherName = (t.Title || "") + t.Name;
+            }
+        }
+        return { roomDisplay, teacherName };
+    }
+
     // ================= 🌟 ฟังก์ชันพิมพ์แบบฟอร์มรับ-ส่งรายเดือน 🌟 =================
     function openPrintModal() {
         if(!dataTable) return;
@@ -416,7 +446,6 @@
             return;
         }
 
-        // ตั้งค่าตัวเลือกปี (ปีนี้ และ ปีหน้า)
         let curDate = new Date();
         let curYear = curDate.getFullYear();
         let curMonth = curDate.getMonth();
@@ -426,11 +455,10 @@
         $('#printYear').html(yearHtml);
         $('#printMonth').val(curMonth);
 
-        updateDayCheckboxes(); // สร้าง Checkbox ของวันจันทร์-ศุกร์
+        updateDayCheckboxes(); 
         new bootstrap.Modal(document.getElementById('printModal')).show();
     }
 
-    // สร้าง Checkbox โดยคัดเอาเฉพาะวันจันทร์-ศุกร์
     function updateDayCheckboxes() {
         const m = parseInt($('#printMonth').val());
         const y = parseInt($('#printYear').val());
@@ -442,7 +470,6 @@
             let date = new Date(y, m, d);
             let dayOfWeek = date.getDay();
             
-            // 0 = วันอาทิตย์, 6 = วันเสาร์ (ข้าม)
             if(dayOfWeek !== 0 && dayOfWeek !== 6) { 
                 let textColor = (dayOfWeek === 1) ? 'text-warning' : (dayOfWeek === 2) ? 'text-danger' : (dayOfWeek === 3) ? 'text-success' : (dayOfWeek === 4) ? 'text-warning' : 'text-primary';
                 
@@ -463,17 +490,17 @@
 
     function generateMonthlyPrint() {
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
-        let cls = $('#filterClass').val() || 'ทุกระดับชั้น';
-        let rm = $('#filterRoom').val() ? ` (ห้อง ${$('#filterRoom').val()})` : '';
+        let cls = $('#filterClass').val();
+        let rm = $('#filterRoom').val();
         let m = parseInt($('#printMonth').val());
         let y = parseInt($('#printYear').val());
         let mName = $('#printMonth option:selected').text();
         let yTh = y + 543;
         
-        // หาชื่อครู
-        let teacherName = (userRole === 'Teacher') ? userName : '.................................................................';
+        let displayCls = cls || 'ทุกระดับชั้น';
+        const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, rm);
+        let classText = cls ? `${displayCls}${roomDisplay}` : displayCls;
 
-        // ดึงวันที่ที่ถูกติ๊กเลือก
         let selectedDays = [];
         $('.print-day-chk:checked').each(function() {
             selectedDays.push(parseInt($(this).val()));
@@ -484,58 +511,66 @@
             return;
         }
 
-        // สร้างกระดาษ
         let printHtml = '';
+        
+        // 🌟 ลูปตามวัน และ หั่นข้อมูล 25 คนต่อหน้า
         selectedDays.forEach(d => {
             let dateStr = `${d} ${mName} ${yTh}`;
-
-            printHtml += `
-            <div class="day-page">
-                <div class="text-center mb-3">
-                    <h4 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
-                    <h3 class="fw-bold m-0">ตารางลงลายมือชื่อ รับ-ส่ง นักเรียน</h3>
-                    <h5 class="fw-bold mt-2 text-danger">ประจำวันที่ ${dateStr}</h5>
-                    <p class="m-0 mt-2 fw-bold text-secondary fs-6">ระดับชั้น: ${cls}${rm} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ครูประจำชั้น: ${teacherName}</p>
-                </div>
+            const chunkSize = 25; // บังคับตัดที่ 25 คน
+            
+            for (let i = 0; i < currentData.length; i += chunkSize) {
+                const chunk = currentData.slice(i, i + chunkSize);
                 
-                <table class="print-table w-100">
-                    <thead>
-                        <tr>
-                            <th width="5%">ลำดับ</th>
-                            <th width="10%">รหัส</th>
-                            <th width="25%" class="text-start">ชื่อ-นามสกุล</th>
-                            <th width="10%">ชื่อเล่น</th>
-                            <th width="20%">ลายเซ็นผู้มาส่ง (เช้า)</th>
-                            <th width="20%">ลายเซ็นผู้มารับ (เย็น)</th>
-                            <th width="10%">หมายเหตุ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            // เรียงชื่อเด็ก
-            currentData.forEach((s, idx) => {
                 printHtml += `
-                        <tr>
-                            <td class="text-center">${idx + 1}</td>
-                            <td class="text-center">${s.StudentId}</td>
-                            <td class="text-start fw-bold">${s.FullName}</td>
-                            <td class="text-center">${s.NickName || '-'}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
+                <div class="day-page">
+                    <div class="text-center mb-2">
+                        <h5 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h5>
+                        <h4 class="fw-bold m-0">ตารางลงลายมือชื่อ รับ-ส่ง นักเรียน</h4>
+                        <h6 class="fw-bold mt-2 text-danger">ประจำวันที่ ${dateStr}</h6>
+                        <p class="m-0 mt-1 fw-bold text-secondary fs-6">ระดับชั้น: ${classText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ครูประจำชั้น: ${teacherName}</p>
+                    </div>
+                    
+                    <table class="print-table w-100">
+                        <thead>
+                            <tr>
+                                <th width="5%">ลำดับ</th>
+                                <th width="12%">รหัส</th>
+                                <th width="30%" class="text-start">ชื่อ-นามสกุล</th>
+                                <th width="10%">ชื่อเล่น</th>
+                                <th width="15%">ผู้มาส่ง (เช้า)</th>
+                                <th width="15%">ผู้มารับ (เย็น)</th>
+                                <th width="13%">หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-            });
 
-            printHtml += `
-                    </tbody>
-                </table>
-            </div>
-            `;
+                chunk.forEach((s, chunkIdx) => {
+                    let globalIdx = i + chunkIdx + 1;
+                    // 🌟 แปลงคำนำหน้าชื่อให้สั้นลง
+                    let shortName = s.FullName.replace(/^เด็กชาย/, 'ด.ช. ').replace(/^เด็กหญิง/, 'ด.ญ. '); 
+                    
+                    printHtml += `
+                            <tr>
+                                <td class="text-center">${globalIdx}</td>
+                                <td class="text-center">${s.StudentId}</td>
+                                <td class="text-start fw-bold">${shortName}</td>
+                                <td class="text-center">${s.NickName || '-'}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                    `;
+                });
+
+                printHtml += `
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            }
         });
 
-        // ยัดลงในกล่องและสั่งปริ๊น
         $('#monthlyPrintArea').html(printHtml);
         $('#monthlyPrintArea').removeClass('d-none');
         bootstrap.Modal.getInstance(document.getElementById('printModal')).hide();
