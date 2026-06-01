@@ -25,20 +25,18 @@
             border-bottom: 2px solid #ccc !important; background-color: #f4f7f6;
         }
 
-        /* ================= 🖨️ ระบบ Smart Print สำหรับตารางรับ-ส่ง ================= */
+        /* ================= 🖨️ ระบบ Smart Print สำหรับตารางรับ-ส่ง (27 คน/หน้า) ================= */
         @media print {
-            @page { size: portrait; margin: 12mm; }
+            @page { size: portrait; margin: 12mm 15mm; }
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            /* ซ่อนหน้าแดชบอร์ดหลักทั้งหมด */
             #mainDashboardContent, .modal, .modal-backdrop { display: none !important; }
-            
-            /* แสดงเฉพาะพื้นที่ตารางปริ๊น */
             #monthlyPrintArea { display: block !important; width: 100%; }
             
             .day-page { page-break-after: always; width: 100%; position: relative; }
             .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 6px; color: black !important; vertical-align: middle; }
+            /* บีบ Padding ลงนิดหน่อยเพื่อให้จุได้ 27 แถวแบบสบายๆ */
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 5px 6px !important; color: black !important; vertical-align: middle; height: 28px; }
             .print-table th { background-color: #e2e8f0 !important; text-align: center; font-weight: bold; }
         }
     </style>
@@ -51,7 +49,6 @@
     }
 </script>
 
-<!-- 🌟 ส่วนแดชบอร์ดหลัก (จะถูกซ่อนตอนสั่งปริ๊น) 🌟 -->
 <div id="mainDashboardContent">
     <div class="d-md-none bg-dark text-white p-3 d-flex justify-content-between align-items-center mobile-header shadow-sm">
         <h5 class="m-0 fw-bold"><i class="fas fa-school text-warning me-2"></i>ศพด. ทับกวาง</h5>
@@ -76,6 +73,9 @@
             <a href="teachers.html" class="menu-teacher"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
             <a href="#" class="menu-sp text-warning mt-3" onclick="goToSpecialSystem()"><i class="fas fa-star me-2"></i> ระบบเรียนพิเศษ</a>
             <hr class="text-secondary mx-3">
+            <a href="users.html" class="menu-admin"><i class="fas fa-users-cog me-2"></i> จัดการผู้ใช้งาน</a>
+            <a href="settings.html" class="menu-admin"><i class="fas fa-cogs me-2"></i> ตั้งค่าระบบ</a>
+            <hr class="text-secondary mx-3">
             <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
         </div>
     </div>
@@ -85,7 +85,7 @@
             <div class="col-md-2 sidebar d-none d-md-block">
                 <div class="text-center mb-4">
                     <i class="fas fa-school fa-3x text-warning mb-2"></i>
-                    <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+                    <h6 class="text-light" id="sidebarSchoolName">ศพด. ทับกวาง (ป่าไผ่)</h6>
                 </div>
                 <a href="dashboard.html" class="active"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
                 <a href="attendance.html" class="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
@@ -96,7 +96,10 @@
                 <a href="kitchen.html" class="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
                 <a href="teachers.html" class="menu-teacher"><i class="fas fa-chalkboard-teacher me-2"></i> ข้อมูลบุคลากร/ครู</a>
                 <a href="#" class="menu-sp text-warning mt-3" onclick="goToSpecialSystem()"><i class="fas fa-star me-2"></i> ระบบเรียนพิเศษ</a>
-                <hr class="text-secondary">
+                <hr class="text-secondary mx-3">
+                <a href="users.html" class="menu-admin"><i class="fas fa-users-cog me-2"></i> จัดการผู้ใช้งาน</a>
+                <a href="settings.html" class="menu-admin"><i class="fas fa-cogs me-2"></i> ตั้งค่าระบบ</a>
+                <hr class="text-secondary mx-3">
                 <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
             </div>
 
@@ -161,7 +164,6 @@
                                 <option value="3">ห้อง 3</option>
                             </select>
                         </div>
-                        <!-- 🌟 เปลี่ยนปุ่มตรงนี้เป็น โหมดเลือกเดือน 🌟 -->
                         <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0">
                             <button class="btn btn-danger btn-sm fw-bold shadow-sm w-100 w-md-auto" onclick="openPrintModal()">
                                 <i class="fas fa-file-pdf"></i> พิมพ์ รับ-ส่ง ประจำวัน / PDF
@@ -192,10 +194,8 @@
     </div>
 </div>
 
-<!-- 🌟 พื้นที่สำหรับปริ๊นตาราง (ซ่อนไว้เสมอ จะโชว์แค่ตอนสั่ง Print) 🌟 -->
 <div id="monthlyPrintArea" class="d-none"></div>
 
-<!-- 🌟 Modal สำหรับเลือกเดือนปริ๊น 🌟 -->
 <div class="modal fade" id="printModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow">
@@ -209,32 +209,22 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small">เลือกเดือน:</label>
                         <select id="printMonth" class="form-select form-select-sm" onchange="updateDayCheckboxes()">
-                            <option value="0">มกราคม</option>
-                            <option value="1">กุมภาพันธ์</option>
-                            <option value="2">มีนาคม</option>
-                            <option value="3">เมษายน</option>
-                            <option value="4">พฤษภาคม</option>
-                            <option value="5">มิถุนายน</option>
-                            <option value="6">กรกฎาคม</option>
-                            <option value="7">สิงหาคม</option>
-                            <option value="8">กันยายน</option>
-                            <option value="9">ตุลาคม</option>
-                            <option value="10">พฤศจิกายน</option>
-                            <option value="11">ธันวาคม</option>
+                            <option value="0">มกราคม</option><option value="1">กุมภาพันธ์</option>
+                            <option value="2">มีนาคม</option><option value="3">เมษายน</option>
+                            <option value="4">พฤษภาคม</option><option value="5">มิถุนายน</option>
+                            <option value="6">กรกฎาคม</option><option value="7">สิงหาคม</option>
+                            <option value="8">กันยายน</option><option value="9">ตุลาคม</option>
+                            <option value="10">พฤศจิกายน</option><option value="11">ธันวาคม</option>
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold small">เลือกปี (พ.ศ.):</label>
-                        <select id="printYear" class="form-select form-select-sm" onchange="updateDayCheckboxes()">
-                            <!-- จะถูกสร้างด้วย Javascript -->
-                        </select>
+                        <select id="printYear" class="form-select form-select-sm" onchange="updateDayCheckboxes()"></select>
                     </div>
                 </div>
                 
                 <h6 class="fw-bold mt-4 mb-2 text-danger border-bottom pb-1"><i class="fas fa-check-square"></i> เลือกวันที่ต้องการพิมพ์ (จ.-ศ.)</h6>
-                <div id="dayCheckboxes" class="p-3 bg-light rounded border" style="max-height: 250px; overflow-y: auto;">
-                    <!-- Checkbox วันที่ จะโชว์ตรงนี้ -->
-                </div>
+                <div id="dayCheckboxes" class="p-3 bg-light rounded border" style="max-height: 250px; overflow-y: auto;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">ยกเลิก</button>
@@ -251,7 +241,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzoIkW_e_OeG-pW4_5vBUrLI64xwmVEXjKQxVifUjUWn7QrwY1TVd9Zdj7UwMPRng5I_w/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec'; 
 
     const userName = sessionStorage.getItem('userName') || 'ผู้ใช้งาน';
     const userRole = sessionStorage.getItem('userRole') || 'Support'; 
@@ -269,9 +259,12 @@
     let grandTotalMale = 0;
     let grandTotalFemale = 0;
     
-    // 🌟 ตัวแปรเก็บข้อมูลนักเรียนและครูทั้งหมด
     let allStudents = [];
     let allTeachers = [];
+    
+    // 🌟 ตัวแปรเก็บข้อมูลองค์กร (โลโก้และชื่อศูนย์)
+    let schoolLogoUrl = "";
+    let schoolNameText = "ศพด.ทม.ทับกวาง (ป่าไผ่)";
 
     function logout() {
         sessionStorage.clear();
@@ -280,16 +273,19 @@
 
     function applyAccessRights() {
         if (userRole === 'Teacher') {
-            $('.menu-reg, .menu-teacher, .menu-kitchen, .menu-regBtn').hide(); 
+            $('.menu-reg, .menu-teacher, .menu-kitchen, .menu-regBtn, .menu-admin').hide(); 
         } else if (userRole === 'Clerk') {
-            $('.menu-attend, .menu-growth, .menu-teacher, .menu-kitchen').hide(); 
+            $('.menu-attend, .menu-growth, .menu-teacher, .menu-kitchen, .menu-admin').hide(); 
         } else if (userRole === 'Support') {
-            $('.menu-attend, .menu-growth, .menu-reg, .menu-teacher, .menu-news, .menu-regBtn').hide(); 
+            $('.menu-attend, .menu-growth, .menu-reg, .menu-teacher, .menu-news, .menu-regBtn, .menu-admin').hide(); 
         }
 
         $('.menu-sp').hide();
         if (userRole === 'Admin' || userName === 'Noom') {
             $('.menu-sp').show();
+            $('.menu-admin').show(); // แอดมินถึงจะเห็นเมนูจัดการผู้ใช้/ตั้งค่า
+        } else {
+            $('.menu-admin').hide();
         }
     }
 
@@ -297,6 +293,45 @@
         sessionStorage.setItem('isSpLoggedIn', 'true');
         sessionStorage.setItem('spUserName', userName);
         window.location.href = 'https://boyrotax.github.io/uuSPStudents/sp_dashboard.html';
+    }
+
+    // 🌟 โหลดโลโก้และชื่อศูนย์แบบ Dynamic 🌟
+    function loadSystemSettings() {
+        fetch(scriptURL + '?action=getSettings')
+            .then(res => res.json())
+            .then(data => {
+                let settings = data.data || {};
+                
+                if (settings.SchoolName) {
+                    schoolNameText = settings.SchoolName;
+                    document.querySelectorAll('.sidebar h6, .mobile-header h5').forEach(el => {
+                        if(el.tagName === 'H5') {
+                            el.innerHTML = (settings.SchoolLogo ? `<img src="${settings.SchoolLogo.replace(/'/g, "")}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 8px; background-color: #fff; padding: 1px;">` : `<i class="fas fa-school text-warning me-2"></i>`) + settings.SchoolName;
+                        } else {
+                            el.innerText = settings.SchoolName;
+                        }
+                    });
+                }
+                
+                if (settings.SchoolLogo && settings.SchoolLogo !== "") {
+                    schoolLogoUrl = settings.SchoolLogo.replace(/'/g, "");
+                    const sidebarLogos = document.querySelectorAll('.sidebar .fa-school'); 
+                    sidebarLogos.forEach(icon => {
+                        let img = document.createElement('img');
+                        img.src = schoolLogoUrl;
+                        img.style.width = '80px'; 
+                        img.style.height = '80px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '50%';
+                        img.style.backgroundColor = '#fff';
+                        img.style.padding = '0px'; 
+                        img.style.border = '2px solid #fff';
+                        img.className = 'mb-2 shadow-sm';
+                        icon.parentNode.replaceChild(img, icon);
+                    });
+                }
+            })
+            .catch(e => console.error('Error loading settings:', e));
     }
 
     function updateSummaryCards() {
@@ -315,7 +350,7 @@
         fetch(scriptURL + '?action=getStudents')
             .then(res => res.json())
             .then(data => {
-                allStudents = data; // เก็บลงตัวแปรโกลบอล
+                allStudents = data; 
                 grandTotalStudents = data.length;
                 grandTotalMale = data.filter(s => s.Gender === 'ชาย').length;
                 grandTotalFemale = data.filter(s => s.Gender === 'หญิง').length;
@@ -378,7 +413,7 @@
         fetch(scriptURL + '?action=getTeachers')
             .then(res => res.json())
             .then(data => {
-                allTeachers = data; // เก็บลงตัวแปรโกลบอล
+                allTeachers = data; 
                 document.getElementById('totalTeachers').innerText = data.length;
             });
     }
@@ -413,7 +448,6 @@
         return result.trim();
     }
 
-    // ================= 🌟 ฟังก์ชันหาชื่อครูและห้อง =================
     function getPrintHeaderInfo(cls, rm) {
         let roomDisplay = "";
         let teacherName = "ไม่ระบุ";
@@ -422,13 +456,12 @@
             let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
             if (rm) {
                 if (rm === '1' && !hasOtherRooms) {
-                    roomDisplay = ""; // ถ้ามีแค่ห้อง 1 อย่างเดียว ไม่ต้องโชว์
+                    roomDisplay = ""; 
                 } else {
                     roomDisplay = ` (ห้อง ${rm})`;
                 }
             }
 
-            // หาครูประจำชั้น
             let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
             if (t && t.Name) {
                 teacherName = (t.Title || "") + t.Name;
@@ -437,7 +470,6 @@
         return { roomDisplay, teacherName };
     }
 
-    // ================= 🌟 ฟังก์ชันพิมพ์แบบฟอร์มรับ-ส่งรายเดือน 🌟 =================
     function openPrintModal() {
         if(!dataTable) return;
         let currentData = dataTable.rows({ search: 'applied' }).data().toArray();
@@ -471,8 +503,6 @@
             let dayOfWeek = date.getDay();
             
             if(dayOfWeek !== 0 && dayOfWeek !== 6) { 
-                let textColor = (dayOfWeek === 1) ? 'text-warning' : (dayOfWeek === 2) ? 'text-danger' : (dayOfWeek === 3) ? 'text-success' : (dayOfWeek === 4) ? 'text-warning' : 'text-primary';
-                
                 html += `
                 <div class="col-4 col-md-3">
                     <div class="form-check border rounded p-2 bg-white">
@@ -511,21 +541,24 @@
             return;
         }
 
+        // 🌟 ดึงโลโก้มาแปะมุมซ้ายแบบ Absolute Position
+        let logoHtml = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="position: absolute; left: 0; top: 0; width: 70px; height: 70px; object-fit: cover; border-radius: 50%;">` : '';
+
         let printHtml = '';
         
-        // 🌟 ลูปตามวัน และ หั่นข้อมูล 25 คนต่อหน้า
         selectedDays.forEach(d => {
             let dateStr = `${d} ${mName} ${yTh}`;
-            const chunkSize = 25; // บังคับตัดที่ 25 คน
+            const chunkSize = 27; // 🌟 บังคับตัดที่ 27 คนเพื่อไม่ให้ล้นหน้า
             
             for (let i = 0; i < currentData.length; i += chunkSize) {
                 const chunk = currentData.slice(i, i + chunkSize);
                 
                 printHtml += `
                 <div class="day-page">
-                    <div class="text-center mb-2">
-                        <h5 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h5>
-                        <h4 class="fw-bold m-0">ตารางลงลายมือชื่อ รับ-ส่ง นักเรียน</h4>
+                    <div class="text-center mb-2" style="position: relative; min-height: 70px;">
+                        ${logoHtml}
+                        <h5 class="fw-bold m-0 mb-1 text-dark">${schoolNameText}</h5>
+                        <h4 class="fw-bold m-0 text-dark">ตารางลงลายมือชื่อ รับ-ส่ง นักเรียน</h4>
                         <h6 class="fw-bold mt-2 text-danger">ประจำวันที่ ${dateStr}</h6>
                         <p class="m-0 mt-1 fw-bold text-secondary fs-6">ระดับชั้น: ${classText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ครูประจำชั้น: ${teacherName}</p>
                     </div>
@@ -535,11 +568,11 @@
                             <tr>
                                 <th width="5%">ลำดับ</th>
                                 <th width="12%">รหัส</th>
-                                <th width="30%" class="text-start">ชื่อ-นามสกุล</th>
+                                <th width="28%" class="text-start">ชื่อ-นามสกุล</th>
                                 <th width="10%">ชื่อเล่น</th>
                                 <th width="15%">ผู้มาส่ง (เช้า)</th>
                                 <th width="15%">ผู้มารับ (เย็น)</th>
-                                <th width="13%">หมายเหตุ</th>
+                                <th width="15%">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -547,7 +580,6 @@
 
                 chunk.forEach((s, chunkIdx) => {
                     let globalIdx = i + chunkIdx + 1;
-                    // 🌟 แปลงคำนำหน้าชื่อให้สั้นลง
                     let shortName = s.FullName.replace(/^เด็กชาย/, 'ด.ช. ').replace(/^เด็กหญิง/, 'ด.ญ. '); 
                     
                     printHtml += `
@@ -583,6 +615,7 @@
 
     $(document).ready(function() {
         applyAccessRights();
+        loadSystemSettings(); // โหลดโลโก้และชื่อศูนย์
         loadDashboardData();
     });
 
