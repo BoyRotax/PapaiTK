@@ -8,6 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    
+    <!-- 🌟 Style สำหรับจัดการหน้ากระดาษ (จะถูกเปลี่ยนค่าด้วย JS) 🌟 -->
+    <style id="printPageStyle"></style>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
         .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
@@ -23,25 +27,23 @@
         .stat-card { border-radius: 15px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; }
         .stat-card h3 { font-size: 32px; font-weight: 800; color: #4c1d95; margin-bottom: 5px; }
 
-        /* 🖨️ ระบบ Print / PDF แนวตั้ง (Portrait) อัจฉริยะ 🖨️ */
+        /* ================= 🖨️ ระบบ Print รวม ================= */
         @media print {
-            @page { size: portrait; margin: 10mm; } 
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .sidebar, .navbar, .nav-tabs, #filterSection, #actionButtons, .dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length, .btn, .d-print-none { 
-                display: none !important; 
-            }
-            .col-md-10 { width: 100% !important; padding: 0 !important; }
-            .card-box { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .print-header { display: block !important; text-align: center; margin-bottom: 15px; }
+            #mainDashboardContent { display: none !important; } /* ซ่อนหน้าจอปกติทั้งหมด */
             
-            table { width: 100% !important; border-collapse: collapse !important; font-size: 14px; }
-            th, td { border: 1px solid #000 !important; padding: 8px !important; color: black !important; }
-            th { background-color: #d8b4fe !important; }
-            .text-success { color: #198754 !important; font-weight: bold; }
-            .text-danger { color: #dc3545 !important; font-weight: bold; }
+            /* ควบคุมการแสดงผลตามโหมดที่สั่งปริ๊น */
+            body.printing-daily #monthlyPrintArea { display: block !important; width: 100%; }
+            body.printing-daily #crosstabPrintArea { display: none !important; }
+            
+            body.printing-crosstab #monthlyPrintArea { display: none !important; }
+            body.printing-crosstab #crosstabPrintArea { display: block !important; width: 100%; }
 
-            /* บังคับตัดหน้ากระดาษทุกๆ 30 คน */
-            tbody tr:nth-child(30n) { page-break-after: always; }
+            .day-page, .crosstab-page { page-break-after: always; width: 100%; position: relative; }
+            
+            .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 5px; color: black !important; vertical-align: middle; }
+            .print-table th { font-weight: bold; text-align: center; }
         }
     </style>
 </head>
@@ -51,176 +53,171 @@
     if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'index.html';
 </script>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <i class="fas fa-school fa-3x text-warning mb-2"></i>
-                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
-            </div>
-            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
-            <a href="attendance.html" id="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
-            <a href="growth.html" id="menu-growth"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
-            <a href="routine.html" class="active"><i class="fas fa-tooth me-2"></i> แปรงฟัน-ดื่มนม</a>
-            <a href="regdata.html" id="menu-reg"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
-            <a href="admin_news.html" id="menu-news"><i class="fas fa-newspaper me-2"></i> ประกาศข่าวสาร</a>
-            <a href="kitchen.html" id="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
-            <hr class="text-secondary">
-            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
-        </div>
-
-        <div class="col-md-10 p-4">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
-                <div>
-                    <h3 class="fw-bold" style="color: #6d28d9;"><i class="fas fa-plus"></i> ระบบแปรงฟัน ดื่มนม ระดับชั้นอนุบาล</h3>
-                    <p class="text-muted mb-0">ติดตามกิจกรรมแปรงฟันและดื่มนมของนักเรียน (เฉพาะคนที่มาเรียน)</p>
+<div id="mainDashboardContent">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar d-none d-md-block">
+                <div class="text-center mb-4">
+                    <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                    <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
                 </div>
-                <div class="badge bg-light text-dark border p-2 shadow-sm fs-6" id="todayDateShow"></div>
+                <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+                <a href="attendance.html" id="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+                <a href="growth.html" id="menu-growth"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+                <a href="routine.html" class="active"><i class="fas fa-tooth me-2"></i> แปรงฟัน-ดื่มนม</a>
+                <a href="regdata.html" id="menu-reg"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
+                <a href="admin_news.html" id="menu-news"><i class="fas fa-newspaper me-2"></i> ประกาศข่าวสาร</a>
+                <a href="kitchen.html" id="menu-kitchen"><i class="fas fa-utensils me-2"></i> อาหารกลางวัน</a>
+                <hr class="text-secondary">
+                <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
             </div>
 
-            <ul class="nav nav-tabs d-print-none" id="routineTab" role="tablist">
-                <li class="nav-item"><button class="nav-link active px-4" data-bs-toggle="tab" data-bs-target="#record"><i class="fas fa-clipboard-check me-1"></i> เช็คแปรงฟัน ดื่มนม</button></li>
-                <li class="nav-item"><button class="nav-link px-4" data-bs-toggle="tab" data-bs-target="#report" onclick="loadReport()"><i class="fas fa-chart-bar me-1"></i> รายงานผล</button></li>
-            </ul>
-
-            <div class="tab-content card-box p-4" id="myTabContent">
+            <!-- Main Content -->
+            <div class="col-md-10 p-4">
                 
-                <div class="tab-pane fade show active" id="record">
-                    <div id="printRecordHeader" class="print-header" style="display: none;">
-                        <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
-                        <h2 class="fw-bold text-dark">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
-                        <h6 id="printRecordSubtitle" class="text-secondary mt-2">วันที่: -</h6>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bold" style="color: #6d28d9;"><i class="fas fa-plus"></i> ระบบแปรงฟัน ดื่มนม ระดับชั้นอนุบาล</h3>
+                        <p class="text-muted mb-0">ติดตามกิจกรรมแปรงฟันและดื่มนมของนักเรียน (เฉพาะคนที่มาเรียน)</p>
                     </div>
-
-                    <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">วันที่บันทึก:</label>
-                            <input type="date" id="recordDate" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">ระดับชั้น:</label>
-                            <select id="filterClass" class="form-select" onchange="updateRoomDropdown()">
-                                <option value="">-- เลือกระดับชั้น --</option>
-                                <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                                <option value="อนุบาล 1">อนุบาล 1</option>
-                                <option value="อนุบาล 2">อนุบาล 2</option>
-                                <option value="อนุบาล 3">อนุบาล 3</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2" id="roomSelectContainer">
-                            <label class="form-label fw-bold">ห้อง:</label>
-                            <select id="filterRoom" class="form-select">
-                                <option value="">-- เลือกห้อง --</option>
-                                <option value="1">ห้อง 1</option>
-                                <option value="2">ห้อง 2</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn bg-purple fw-bold shadow-sm" id="btnLoadStudents" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน</button>
-                        </div>
-                    </div>
-
-                    <div id="actionButtons" class="mb-3 d-none gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="checkAll('chk-brush', true)"><i class="fas fa-check"></i> แปรงฟันทั้งหมด</button>
-                        <button class="btn btn-sm btn-outline-info" onclick="checkAll('chk-milk', true)"><i class="fas fa-check"></i> ดื่มนมทั้งหมด</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="checkAll('both', false)"><i class="fas fa-times"></i> ยกเลิกทั้งหมด</button>
-                        <button class="btn btn-warning fw-bold ms-auto" id="btnSaveRoutine" onclick="saveRoutine()"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table id="recordTable" class="table table-hover align-middle text-center table-bordered">
-                            <thead class="table-purple">
-                                <tr>
-                                    <th>รหัสนักเรียน</th>
-                                    <th class="text-start">ชื่อ-นามสกุล</th>
-                                    <th>ชื่อเล่น</th>
-                                    <th>แปรงฟัน</th>
-                                    <th>ดื่มนม</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recordTableBody">
-                                <tr><td colspan="5" class="text-center text-muted py-4">เลือกระดับชั้นและห้อง แล้วกด "ดึงรายชื่อ"</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="badge bg-light text-dark border p-2 shadow-sm fs-6" id="todayDateShow"></div>
                 </div>
 
-                <div class="tab-pane fade" id="report">
-                    <div id="printReportHeader" class="print-header" style="display: none;">
-                        <h4 class="fw-bold text-dark mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
-                        <h2 class="fw-bold text-dark">รายงานสรุปการแปรงฟันและดื่มนม</h2>
-                        <h6 id="printReportSubtitle" class="text-secondary mt-2 mb-3">ประจำช่วงเวลา: -</h6>
-                        
-                        <div class="d-flex justify-content-around border-top border-bottom py-2 mb-3">
-                            <div><strong class="text-dark">สรุปแปรงฟัน:</strong> <span id="printBrushPercent" class="text-success fs-5 fw-bold">0%</span> <span id="printBrushText" class="text-muted">(0/0)</span></div>
-                            <div><strong class="text-dark">สรุปดื่มนม:</strong> <span id="printMilkPercent" class="text-primary fs-5 fw-bold">0%</span> <span id="printMilkText" class="text-muted">(0/0)</span></div>
-                        </div>
-                    </div>
+                <ul class="nav nav-tabs" id="routineTab" role="tablist">
+                    <li class="nav-item"><button class="nav-link active px-4" data-bs-toggle="tab" data-bs-target="#record"><i class="fas fa-clipboard-check me-1"></i> เช็คแปรงฟัน ดื่มนม</button></li>
+                    <li class="nav-item"><button class="nav-link px-4" data-bs-toggle="tab" data-bs-target="#report" onclick="loadReport()"><i class="fas fa-chart-bar me-1"></i> รายงานผล</button></li>
+                </ul>
 
-                    <div class="row align-items-end mb-4 bg-light p-3 rounded d-print-none">
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold small">ตั้งแต่วันที่:</label>
-                            <input type="date" id="repStartDate" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold small">ถึงวันที่:</label>
-                            <input type="date" id="repEndDate" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold small">ระดับชั้น:</label>
-                            <select id="repClass" class="form-select form-select-sm">
-                                <option value="">ทุกระดับชั้น</option>
-                                <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
-                                <option value="อนุบาล 1">อนุบาล 1</option>
-                                <option value="อนุบาล 2">อนุบาล 2</option>
-                                <option value="อนุบาล 3">อนุบาล 3</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 text-end d-flex gap-2">
-                            <button class="btn bg-purple btn-sm flex-grow-1 fw-bold" onclick="filterReport()"><i class="fas fa-filter"></i> แสดงรายงาน</button>
-                            <button class="btn btn-danger btn-sm flex-grow-1 fw-bold" onclick="printReport()"><i class="fas fa-file-pdf"></i> PDF/พิมพ์</button>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4 g-3 d-print-none">
-                        <div class="col-md-6">
-                            <div class="stat-card bg-white shadow-sm">
-                                <h6 class="text-muted fw-bold">สรุปการแปรงฟัน</h6>
-                                <h3 id="brushPercent">0%</h3>
-                                <small class="text-muted" id="brushText">0 / 0 รายการ</small>
+                <div class="tab-content card-box p-4" id="myTabContent">
+                    
+                    <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล (เซ็นรับ-ส่ง แนวตั้ง) 🌟 -->
+                    <div class="tab-pane fade show active" id="record">
+                        <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">วันที่บันทึก:</label>
+                                <input type="date" id="recordDate" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">ระดับชั้น:</label>
+                                <select id="filterClass" class="form-select" onchange="updateRoomDropdown()">
+                                    <option value="">-- เลือกระดับชั้น --</option>
+                                    <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                                    <option value="อนุบาล 1">อนุบาล 1</option>
+                                    <option value="อนุบาล 2">อนุบาล 2</option>
+                                    <option value="อนุบาล 3">อนุบาล 3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2" id="roomSelectContainer">
+                                <label class="form-label fw-bold">ห้อง:</label>
+                                <select id="filterRoom" class="form-select">
+                                    <option value="">-- เลือกห้อง --</option>
+                                    <option value="1">ห้อง 1</option>
+                                    <option value="2">ห้อง 2</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn bg-purple fw-bold shadow-sm" id="btnLoadStudents" onclick="loadStudentsForRecord()"><i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน</button>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="stat-card bg-warning bg-opacity-10 shadow-sm border-warning">
-                                <h6 class="text-muted fw-bold">สรุปการดื่มนม</h6>
-                                <h3 id="milkPercent" class="text-warning">0%</h3>
-                                <small class="text-muted" id="milkText">0 / 0 รายการ</small>
-                            </div>
+
+                        <div id="actionButtons" class="mb-3 d-none gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="checkAll('chk-brush', true)"><i class="fas fa-check"></i> แปรงฟันทั้งหมด</button>
+                            <button class="btn btn-sm btn-outline-info" onclick="checkAll('chk-milk', true)"><i class="fas fa-check"></i> ดื่มนมทั้งหมด</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="checkAll('both', false)"><i class="fas fa-times"></i> ยกเลิกทั้งหมด</button>
+                            <button class="btn btn-warning fw-bold ms-auto" id="btnSaveRoutine" onclick="saveRoutine()"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="recordTable" class="table table-hover align-middle text-center table-bordered">
+                                <thead class="table-purple">
+                                    <tr>
+                                        <th>รหัสนักเรียน</th>
+                                        <th class="text-start">ชื่อ-นามสกุล</th>
+                                        <th>ชื่อเล่น</th>
+                                        <th>แปรงฟัน</th>
+                                        <th>ดื่มนม</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordTableBody">
+                                    <tr><td colspan="5" class="text-center text-muted py-4">เลือกระดับชั้นและห้อง แล้วกด "ดึงรายชื่อ"</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table id="reportTable" class="table table-striped w-100 text-center">
-                            <thead class="table-purple">
-                                <tr>
-                                    <th>วันที่</th>
-                                    <th>รหัสนักเรียน</th>
-                                    <th class="text-start">ชื่อ-นามสกุล</th>
-                                    <th>ระดับชั้น (ห้อง)</th>
-                                    <th>แปรงฟัน</th>
-                                    <th>ดื่มนม</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <!-- 🌟 Tab 2: หน้ารายงานผล (ตารางสรุปแนวนอน) 🌟 -->
+                    <div class="tab-pane fade" id="report">
+                        <div class="row align-items-end mb-4 bg-light p-3 rounded">
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold small">ตั้งแต่วันที่:</label>
+                                <input type="date" id="repStartDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold small">ถึงวันที่:</label>
+                                <input type="date" id="repEndDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold small">ระดับชั้น:</label>
+                                <select id="repClass" class="form-select form-select-sm">
+                                    <option value="">ทุกระดับชั้น</option>
+                                    <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                                    <option value="อนุบาล 1">อนุบาล 1</option>
+                                    <option value="อนุบาล 2">อนุบาล 2</option>
+                                    <option value="อนุบาล 3">อนุบาล 3</option>
+                                </select>
+                            </div>
+                            <!-- 🌟 อัปเกรดปุ่ม PDF แยก 2 ปุ่ม สีเขียวกับสีฟ้า 🌟 -->
+                            <div class="col-md-6 text-end d-flex gap-2">
+                                <button class="btn bg-purple btn-sm flex-grow-1 fw-bold text-white" onclick="filterReport()"><i class="fas fa-filter"></i> ดึงข้อมูล</button>
+                                <button class="btn btn-success btn-sm flex-grow-1 fw-bold" onclick="printCrossTab('brush')"><i class="fas fa-tooth"></i> PDF แปรงฟัน</button>
+                                <button class="btn btn-info btn-sm flex-grow-1 fw-bold text-white" onclick="printCrossTab('milk')"><i class="fas fa-glass-whiskey"></i> PDF ดื่มนม</button>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 g-3">
+                            <div class="col-md-6">
+                                <div class="stat-card bg-white shadow-sm">
+                                    <h6 class="text-muted fw-bold">สรุปการแปรงฟัน</h6>
+                                    <h3 id="brushPercent" class="text-success">0%</h3>
+                                    <small class="text-muted" id="brushText">0 / 0 รายการ</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stat-card bg-white shadow-sm">
+                                    <h6 class="text-muted fw-bold">สรุปการดื่มนม</h6>
+                                    <h3 id="milkPercent" class="text-info">0%</h3>
+                                    <small class="text-muted" id="milkText">0 / 0 รายการ</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="reportTable" class="table table-striped w-100 text-center">
+                                <thead class="table-purple">
+                                    <tr>
+                                        <th>วันที่</th>
+                                        <th>รหัสนักเรียน</th>
+                                        <th class="text-start">ชื่อ-นามสกุล</th>
+                                        <th>ระดับชั้น (ห้อง)</th>
+                                        <th>แปรงฟัน</th>
+                                        <th>ดื่มนม</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
+
                 </div>
-
             </div>
         </div>
     </div>
 </div>
+
+<!-- พื้นที่สำหรับเตรียมกระดาษปริ๊น (จะโชว์เฉพาะตอน Print) -->
+<div id="monthlyPrintArea" class="d-none"></div>
+<div id="crosstabPrintArea" class="d-none"></div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -253,8 +250,12 @@
         applyAccessRights();
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
+        
+        // เซ็ตให้หน้ารายงานผล ถอยไปวันที่ 1 ของเดือนปัจจุบันเสมอ
+        const firstDayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+        
         document.getElementById('recordDate').value = todayStr;
-        document.getElementById('repStartDate').value = todayStr;
+        document.getElementById('repStartDate').value = firstDayStr; 
         document.getElementById('repEndDate').value = todayStr;
         
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -279,23 +280,16 @@
         const cls = document.getElementById('filterClass').value;
         const roomContainer = document.getElementById('roomSelectContainer');
         const roomSelect = document.getElementById('filterRoom');
-        
-        if (!cls) {
-            roomContainer.classList.add('d-none');
-            return;
-        }
+        if (!cls) { roomContainer.classList.add('d-none'); return; }
         
         let roomsInClass = [...new Set(allStudents.filter(s => s.ClassLevel === cls).map(s => String(s.Room).trim()).filter(r => r !== ""))];
-        
         if (roomsInClass.length <= 1) {
             roomContainer.classList.add('d-none'); 
             roomSelect.value = roomsInClass.length === 1 ? roomsInClass[0] : "";
         } else {
             roomContainer.classList.remove('d-none'); 
             roomSelect.innerHTML = '<option value="">-- เลือกห้อง --</option>';
-            roomsInClass.sort().forEach(r => {
-                roomSelect.innerHTML += `<option value="${r}">ห้อง ${r}</option>`;
-            });
+            roomsInClass.sort().forEach(r => { roomSelect.innerHTML += `<option value="${r}">ห้อง ${r}</option>`; });
             if(sessionStorage.getItem('userRoom')) roomSelect.value = sessionStorage.getItem('userRoom');
         }
     }
@@ -307,45 +301,33 @@
         const tbody = document.getElementById('recordTableBody');
         const btn = document.getElementById('btnLoadStudents');
 
-        if(!dateVal) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึก', 'warning');
-        if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้น', 'warning');
-
+        if(!dateVal || !cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่และระดับชั้น', 'warning');
+        
         const checkDate = new Date(dateVal);
-        if(checkDate.getDay() === 0 || checkDate.getDay() === 6) {
-            return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุดเสาร์-อาทิตย์ ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
-        }
+        if(checkDate.getDay() === 0 || checkDate.getDay() === 6) return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุดเสาร์-อาทิตย์', 'warning');
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ดึงรายชื่อ...';
-        btn.disabled = true;
-
-        const dParts = dateVal.split('-');
-        const searchDate = `${dParts[2]}/${dParts[1]}/${parseInt(dParts[0]) + 543}`;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ดึงรายชื่อ...'; btn.disabled = true;
+        const searchDate = `${dateVal.split('-')[2]}/${dateVal.split('-')[1]}/${parseInt(dateVal.split('-')[0]) + 543}`;
 
         try {
             const resHol = await fetch(scriptURL + '?action=checkHoliday&date=' + dateVal);
             const holidayData = await resHol.json();
             if (holidayData.isHoliday) {
                 btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
-                return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name + ' ไม่สามารถเช็คข้อมูลได้ครับ', 'warning');
+                return Swal.fire('แจ้งเตือน', 'วันนี้เป็นวันหยุด: ' + holidayData.name, 'warning');
             }
 
             const resAtt = await fetch(`${scriptURL}?action=getPresentStudents&date=${searchDate}`);
             const attData = await resAtt.json();
             const presentIds = attData.data || [];
 
-            const filtered = allStudents.filter(s => 
-                s.ClassLevel === cls && 
-                (rm === "" || String(s.Room) === String(rm)) &&
-                presentIds.includes(String(s.StudentId)) 
-            );
-            
+            const filtered = allStudents.filter(s => s.ClassLevel === cls && (rm === "" || String(s.Room) === String(rm)) && presentIds.includes(String(s.StudentId)));
             tbody.innerHTML = '';
 
             if(filtered.length === 0) {
                 document.getElementById('actionButtons').classList.add('d-none');
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">ไม่พบข้อมูล (เด็กอาจจะขาดเรียนทั้งหมด หรือคุณยังไม่ได้เช็คชื่อเข้าเรียนในวันนี้ครับ)</td></tr>';
-                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
-                return;
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">ไม่พบข้อมูลคนที่มาเรียน</td></tr>';
+                btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false; return;
             }
 
             document.getElementById('actionButtons').classList.remove('d-none');
@@ -360,17 +342,13 @@
                 </tr>`;
                 tbody.innerHTML += tr;
             });
-
-        } catch(e) { Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อฐานข้อมูลล้มเหลว', 'error'); } 
+        } catch(e) {} 
         btn.innerHTML = '<i class="fas fa-search"></i> ดึงรายชื่อคนที่มาเรียน'; btn.disabled = false;
     }
 
     function checkAll(type, isChecked) {
-        if(type === 'both') {
-            document.querySelectorAll('.chk-brush, .chk-milk').forEach(el => el.checked = isChecked);
-        } else {
-            document.querySelectorAll('.' + type).forEach(el => el.checked = isChecked);
-        }
+        if(type === 'both') document.querySelectorAll('.chk-brush, .chk-milk').forEach(el => el.checked = isChecked);
+        else document.querySelectorAll('.' + type).forEach(el => el.checked = isChecked);
     }
 
     function saveRoutine() {
@@ -383,73 +361,24 @@
         document.querySelectorAll('#recordTableBody tr').forEach(tr => {
             payload.push({
                 date: "'" + formattedDate, 
-                studentId: tr.getAttribute('data-sid'),
-                classLevel: tr.getAttribute('data-cls'),
-                room: tr.getAttribute('data-rm'),
-                brushed: tr.querySelector('.chk-brush').checked,
-                milk: tr.querySelector('.chk-milk').checked
+                studentId: tr.getAttribute('data-sid'), classLevel: tr.getAttribute('data-cls'), room: tr.getAttribute('data-rm'),
+                brushed: tr.querySelector('.chk-brush').checked, milk: tr.querySelector('.chk-milk').checked
             });
         });
-
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...'; btn.disabled = true;
 
-        fetch(scriptURL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'action=saveRoutine&data=' + encodeURIComponent(JSON.stringify(payload))
-        })
+        fetch(scriptURL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'action=saveRoutine&data=' + encodeURIComponent(JSON.stringify(payload)) })
         .then(res => res.json())
         .then(data => {
-            if(data.status === 'success') {
-                Swal.fire('สำเร็จ', data.message, 'success').then((result) => {
-                    if (result.isConfirmed) { printRecordTable(); }
-                });
-            } else { Swal.fire('ผิดพลาด', data.message, 'error'); }
-        }).finally(() => {
-            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false;
-        });
-    }
-
-    function getPrintHeaderInfo(cls, rm) {
-        let roomDisplay = "";
-        let teacherName = "ไม่ระบุ";
-        if (cls) {
-            let hasOtherRooms = allStudents.some(s => s.ClassLevel === cls && s.Room != '1' && s.Room != '');
-            if (rm) {
-                if (rm === '1' && !hasOtherRooms) roomDisplay = ""; 
-                else roomDisplay = `(ห้อง ${rm})`;
-            }
-            let t = allTeachers.find(t => t.AssignedClass === cls && (String(t.AssignedRoom) === String(rm) || t.AssignedRoom === ''));
-            if (t && t.Name) teacherName = (t.Title || "") + t.Name;
-        }
-        return { roomDisplay, teacherName };
-    }
-
-    function printRecordTable() {
-        const dateVal = document.getElementById('recordDate').value;
-        const cls = document.getElementById('filterClass').value;
-        const rm = document.getElementById('filterRoom').value;
-        
-        const { roomDisplay, teacherName } = getPrintHeaderInfo(cls, rm);
-        
-        let headerTxt = `วันที่: ${formatThaiDatePrint(dateVal)} | ระดับชั้น: ${cls} ${roomDisplay} | ครูประจำชั้น: ${teacherName}`;
-        document.getElementById('printRecordSubtitle').innerText = headerTxt;
-        
-        document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.add('d-print-none'));
-
-        document.getElementById('printRecordHeader').style.display = 'block';
-        setTimeout(function() {
-            window.print();
-            document.getElementById('printRecordHeader').style.display = 'none';
-            document.querySelectorAll('#recordTable th:nth-child(3), #recordTable td:nth-child(3)').forEach(el => el.classList.remove('d-print-none'));
-        }, 500);
+            if(data.status === 'success') { Swal.fire('สำเร็จ', data.message, 'success'); } 
+            else { Swal.fire('ผิดพลาด', data.message, 'error'); }
+        }).finally(() => { btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false; });
     }
 
     function getSafeTime(val, isEndOfDay) {
         if (!val) return isEndOfDay ? Infinity : 0;
         let dStr = String(val).trim().replace(/'/g, ""); 
         let y = 1970, m = 0, d = 1;
-        
         if (dStr.includes('/')) { 
             let parts = dStr.split(' ')[0].split('/');
             d = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1; y = parseInt(parts[2], 10);
@@ -477,17 +406,15 @@
         Swal.fire({ title: 'กำลังดึงข้อมูลรายงาน...', didOpen: () => { Swal.showLoading() }});
         fetch(scriptURL + '?action=getRoutineReport')
             .then(res => res.json())
-            .then(data => {
-                rawReportData = data.data || [];
-                filterReport();
-                Swal.close();
-            });
+            .then(data => { rawReportData = data.data || []; filterReport(); Swal.close(); });
     }
 
     function filterReport() {
         const startRaw = document.getElementById('repStartDate').value;
         const endRaw = document.getElementById('repEndDate').value;
         const cls = document.getElementById('repClass').value.trim();
+
+        if(!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกช่วงวันที่', 'warning');
 
         const sTime = getSafeTime(startRaw, false);
         const eTime = getSafeTime(endRaw, true);
@@ -501,9 +428,7 @@
 
         filtered = filtered.map(r => {
             let studentInfo = allStudents.find(s => String(s.StudentId) === String(r.StudentId));
-            return {
-                ...r, FullName: studentInfo ? studentInfo.FullName : 'ไม่ทราบชื่อ'
-            };
+            return { ...r, FullName: studentInfo ? studentInfo.FullName : 'ไม่ทราบชื่อ' };
         });
 
         let totalCount = filtered.length;
@@ -513,29 +438,16 @@
         let bPercent = totalCount === 0 ? 0 : Math.round((brushCount / totalCount) * 100);
         let mPercent = totalCount === 0 ? 0 : Math.round((milkCount / totalCount) * 100);
 
-        // อัปเดตยอดหน้าเว็บ
         document.getElementById('brushPercent').innerText = bPercent + '%';
         document.getElementById('brushText').innerText = `${brushCount} / ${totalCount} รายการ`;
         document.getElementById('milkPercent').innerText = mPercent + '%';
         document.getElementById('milkText').innerText = `${milkCount} / ${totalCount} รายการ`;
 
-        // 🌟 อัปเดตยอดสำหรับหน้า PDF
-        document.getElementById('printBrushPercent').innerText = bPercent + '%';
-        document.getElementById('printBrushText').innerText = `(${brushCount}/${totalCount})`;
-        document.getElementById('printMilkPercent').innerText = mPercent + '%';
-        document.getElementById('printMilkText').innerText = `(${milkCount}/${totalCount})`;
-
         if (reportDataTable) reportDataTable.destroy();
         reportDataTable = $('#reportTable').DataTable({
             data: filtered,
             columns: [
-                { 
-                    data: 'Date', 
-                    render: function(data, type, row) { 
-                        if (type === 'sort' || type === 'type') return getSafeTime(data, false);
-                        return formatDisplayDate(data); 
-                    } 
-                },
+                { data: 'Date', render: function(data, type, row) { if (type === 'sort' || type === 'type') return getSafeTime(data, false); return formatDisplayDate(data); } },
                 { data: 'StudentId' },
                 { data: 'FullName', className: 'text-start fw-bold' }, 
                 { data: null, render: (data, type, row) => `${row.ClassLevel} ${row.Room ? '(ห้อง '+row.Room+')' : ''}` },
@@ -547,57 +459,138 @@
         });
     }
 
-    function getTeacherByClass(cls) {
-        let t = allTeachers.find(t => t.AssignedClass === cls);
-        return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
-    }
-
-    function printReport() {
-        if(!reportDataTable || reportDataTable.rows().count() === 0) {
-            Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับพิมพ์ กรุณากรองข้อมูลก่อน', 'warning');
-            return;
-        }
-
-        const startRaw = document.getElementById('repStartDate').value;
-        const endRaw = document.getElementById('repEndDate').value;
-        const cls = document.getElementById('repClass').value;
-        
-        let dateText = "ทั้งหมด";
-        if(startRaw && endRaw) {
-            dateText = `ตั้งแต่วันที่ ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)}`;
-        } else if (startRaw) {
-            dateText = `ตั้งแต่วันที่ ${formatThaiDatePrint(startRaw)}`;
-        }
-
-        let classText = "";
-        if (cls) {
-            let tName = getTeacherByClass(cls);
-            classText = ` | ระดับชั้น: ${cls} | ครูประจำชั้น: ${tName}`;
-            document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.add('d-print-none'));
-        }
-
-        document.getElementById('printReportSubtitle').innerText = `${dateText}${classText}`;
-
-        const oldLength = reportDataTable.page.len();
-        reportDataTable.page.len(-1).draw(false);
-
-        document.getElementById('printReportHeader').style.display = 'block';
-
-        setTimeout(function() {
-            window.print();
-            reportDataTable.page.len(oldLength).draw(false); 
-            document.getElementById('printReportHeader').style.display = 'none';
-            if (cls) {
-                document.querySelectorAll('#reportTable th:nth-child(4), #reportTable td:nth-child(4)').forEach(el => el.classList.remove('d-print-none'));
-            }
-        }, 500);
-    }
-
     function formatThaiDatePrint(isoDate) {
         if(!isoDate) return "";
         const d = new Date(isoDate);
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         return `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
+    }
+
+    function getTeacherByClass(cls) {
+        let t = allTeachers.find(t => t.AssignedClass === cls);
+        return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
+    }
+
+    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน แยกแปรงฟัน/ดื่มนม) 🌟 =================
+    function printCrossTab(type) {
+        if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
+
+        const startRaw = document.getElementById('repStartDate').value;
+        const endRaw = document.getElementById('repEndDate').value;
+        const cls = document.getElementById('repClass').value;
+
+        if(!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกตั้งแต่วันที่ และ ถึงวันที่', 'warning');
+        if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้นที่ต้องการปริ๊นรายงาน', 'warning');
+
+        // สร้างชุดข้อมูลวันที่ (ตัดเสาร์-อาทิตย์ทิ้ง)
+        let dates = [];
+        let cur = new Date(startRaw);
+        let end = new Date(endRaw);
+        
+        while(cur <= end) {
+            let day = cur.getDay();
+            if(day !== 0 && day !== 6) { dates.push(new Date(cur)); }
+            cur.setDate(cur.getDate() + 1);
+        }
+
+        if(dates.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการ (จ.-ศ.) ในระยะเวลาที่เลือก', 'warning');
+
+        // ดึงเด็กในห้องนี้มา (และพยายามจัดเรียงให้ตรงกับห้อง)
+        let students = allStudents.filter(s => s.ClassLevel === cls);
+        if(students.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบนักเรียนในระดับชั้นนี้', 'warning');
+        
+        // เรียงตามห้อง และ ชื่อ
+        students.sort((a,b) => {
+            if(a.Room !== b.Room) return String(a.Room).localeCompare(String(b.Room));
+            return a.FullName.localeCompare(b.FullName);
+        });
+
+        // สร้าง Dictionary แผนที่ข้อมูลให้ค้นหาง่ายขึ้น O(1)
+        let reportMap = {};
+        rawReportData.forEach(r => {
+            let t = getSafeTime(r.Date, false);
+            reportMap[`${r.StudentId}_${t}`] = r;
+        });
+
+        // กำหนด Theme สีตามประเภท
+        let isBrush = (type === 'brush');
+        let titleName = isBrush ? 'แปรงฟัน' : 'ดื่มนม';
+        let mainColor = isBrush ? '#16a34a' : '#2563eb'; // เขียวเข้ม : ฟ้าเข้ม
+        let lightColor = isBrush ? '#dcfce7' : '#dbeafe'; // เขียวอ่อน : ฟ้าอ่อน
+        let teacherName = getTeacherByClass(cls);
+
+        let html = '';
+        const chunk = 25; // 🌟 บังคับ 25 คนต่อหน้า
+        
+        for(let i=0; i<students.length; i+=chunk) {
+            let stdChunk = students.slice(i, i+chunk);
+            
+            html += `<div class="crosstab-page">`;
+            html += `<div class="text-center mb-2">`;
+            html += `<h4 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>`;
+            html += `<h3 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h3>`;
+            html += `<p class="m-0 mt-2 fw-bold text-secondary" style="font-size: 14px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
+            html += `</div>`;
+
+            html += `<table class="print-table w-100" style="font-size: 11px;">`;
+            html += `<thead>`;
+            html += `<tr style="background-color: ${lightColor} !important; color: ${mainColor}; border-bottom: 2px solid ${mainColor};">`;
+            html += `<th width="4%">ลำดับ</th>`;
+            html += `<th width="8%">เลขประจำตัว</th>`;
+            html += `<th width="18%" class="text-start">ชื่อ-นามสกุล</th>`;
+            
+            dates.forEach(d => { html += `<th>${d.getDate()}</th>`; });
+            
+            html += `<th width="5%">รวม (วัน)</th>`;
+            html += `</tr>`;
+            html += `</thead><tbody>`;
+
+            stdChunk.forEach((s, idx) => {
+                let globalIdx = i + idx + 1;
+                let shortName = s.FullName.replace(/^เด็กชาย/, 'ด.ช. ').replace(/^เด็กหญิง/, 'ด.ญ. ');
+                
+                html += `<tr>`;
+                html += `<td class="text-center">${globalIdx}</td>`;
+                html += `<td class="text-center">${s.StudentId}</td>`;
+                html += `<td class="text-start fw-bold">${shortName}</td>`;
+                
+                let total = 0;
+                dates.forEach(d => {
+                    let t = getSafeTime(d.toISOString().split('T')[0], false);
+                    let rec = reportMap[`${s.StudentId}_${t}`];
+                    let checked = false;
+                    
+                    if(rec) {
+                        if(isBrush && String(rec.BrushedTeeth).includes("✅")) checked = true;
+                        if(!isBrush && String(rec.DrankMilk).includes("✅")) checked = true;
+                    }
+                    
+                    if(checked) {
+                        html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
+                        total++;
+                    } else {
+                        if(rec) html += `<td class="text-center text-danger">x</td>`;
+                        else html += `<td class="text-center text-light">-</td>`;
+                    }
+                });
+                
+                html += `<td class="text-center fw-bold" style="color: ${mainColor};">${total}</td>`;
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+        }
+
+        // จัดการหน้ากระดาษ
+        document.getElementById('crosstabPrintArea').innerHTML = html;
+        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 10mm; }';
+        
+        document.body.classList.add('printing-crosstab');
+
+        setTimeout(() => {
+            window.print();
+            document.body.classList.remove('printing-crosstab');
+            document.getElementById('crosstabPrintArea').innerHTML = ''; // ล้างขยะ
+        }, 500);
     }
 </script>
 </body>
