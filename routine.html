@@ -611,6 +611,59 @@
             document.getElementById('crosstabPrintArea').innerHTML = ''; 
         }, 500);
     }
+
+    // โค้ดสำหรับดึงการตั้งค่าระบบ (ชื่อโรงเรียน, โลโก้, ฯลฯ)
+    function loadSystemSettings() {
+        fetch(scriptURL + '?action=getSettings')
+            .then(res => res.json())
+            .then(data => {
+                let settings = data.data || {};
+                
+                // 1. อัปเดตโลโก้ที่แถบเมนูด้านซ้าย (ถ้ามี)
+                const sidebarLogos = document.querySelectorAll('.sidebar .fa-school'); 
+                const schoolNameElements = document.querySelectorAll('.sidebar h6, .mobile-header h5');
+
+                if (settings.SchoolLogo && settings.SchoolLogo !== "") {
+                    let logoUrl = settings.SchoolLogo.replace(/'/g, "");
+                    // แทนที่ไอคอนโรงเรียนด้วยโลโก้
+                    sidebarLogos.forEach(icon => {
+                        let img = document.createElement('img');
+                        img.src = logoUrl;
+                        img.style.maxHeight = '60px';
+                        img.style.objectFit = 'contain';
+                        img.className = 'mb-2';
+                        icon.parentNode.replaceChild(img, icon);
+                    });
+                }
+
+                if (settings.SchoolName) {
+                    // อัปเดตชื่อโรงเรียนที่แถบเมนู
+                    schoolNameElements.forEach(el => {
+                        // เช็คว่าเป็นเมนูมือถือหรือไม่
+                        if(el.tagName === 'H5') {
+                            el.innerHTML = (settings.SchoolLogo ? `<img src="${settings.SchoolLogo.replace(/'/g, "")}" style="max-height: 24px; margin-right: 8px;">` : `<i class="fas fa-school text-warning me-2"></i>`) + settings.SchoolName;
+                        } else {
+                            el.innerText = settings.SchoolName;
+                        }
+                    });
+
+                    // 2. อัปเดตหัวกระดาษตอนปริ๊น PDF (ค้นหาและแทนที่ข้อความ "ศพด.ทม.ทับกวาง (ป่าไผ่)")
+                    const printHeaders = document.querySelectorAll('.print-header h4, .print-header h5');
+                    printHeaders.forEach(header => {
+                         if (header.innerText.includes("ศพด.ทม.ทับกวาง (ป่าไผ่)") || header.innerText === "ศพด.ทม.ทับกวาง (ป่าไผ่)") {
+                            header.innerText = settings.SchoolName;
+                         }
+                    });
+                }
+            })
+            .catch(e => console.error('ไม่สามารถโหลดการตั้งค่าระบบได้:', e));
+    }
+
+    // เรียกใช้ฟังก์ชันทันทีที่โหลดหน้าเสร็จ
+    $(document).ready(function() {
+        // ... โค้ดเดิมของคุณ ...
+        loadSystemSettings(); // เพิ่มบรรทัดนี้
+    });
 </script>
 </body>
 </html>
