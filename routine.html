@@ -39,7 +39,7 @@
             .day-page, .crosstab-page { page-break-after: always; width: 100%; position: relative; }
             
             .print-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
-            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3px 5px !important; color: black !important; vertical-align: middle; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3.5px 5px !important; color: black !important; vertical-align: middle; }
             .print-table th { font-weight: bold; text-align: center; }
         }
     </style>
@@ -53,6 +53,7 @@
 <div id="mainDashboardContent">
     <div class="container-fluid">
         <div class="row">
+            <!-- Sidebar -->
             <div class="col-md-2 sidebar d-none d-md-block">
                 <div class="text-center mb-4">
                     <i class="fas fa-school fa-3x text-warning mb-2"></i>
@@ -69,6 +70,7 @@
                 <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
             </div>
 
+            <!-- Main Content -->
             <div class="col-md-10 p-4">
                 
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -86,10 +88,13 @@
 
                 <div class="tab-content card-box p-4" id="myTabContent">
                     
+                    <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                     <div class="tab-pane fade show active" id="record">
                         
-                        <div id="printRecordHeader" class="print-header" style="display: none;">
-                            <div id="printRecordLogoContainer"></div> <h4 class="fw-bold text-dark mb-1" id="printRecordSchoolName">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
+                        <!-- 🖨️ หัวกระดาษพิมพ์แนวตั้ง (Tab 1) 🖨️ -->
+                        <div id="printRecordHeader" class="print-header text-center mb-3" style="display: none; position: relative;">
+                            <div id="printRecordLogoContainer" style="position: absolute; left: 0; top: 0;"></div>
+                            <h4 class="fw-bold text-dark mb-1" id="printRecordSchoolName">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
                             <h2 class="fw-bold text-dark">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
                             <h6 id="printRecordSubtitle" class="text-secondary mt-2">วันที่: -</h6>
                         </div>
@@ -147,6 +152,7 @@
                         </div>
                     </div>
 
+                    <!-- 🌟 Tab 2: หน้ารายงานผล -->
                     <div class="tab-pane fade" id="report">
                         <div class="row align-items-end mb-4 bg-light p-3 rounded">
                             <div class="col-md-2">
@@ -233,7 +239,6 @@
     let rawReportData = [];
     let reportDataTable;
     
-    // 🌟 ตัวแปรเก็บข้อมูลองค์กร (ดึงมารอไว้สำหรับ PDF)
     let schoolLogoUrl = "";
     let schoolNameText = "ศพด.ทม.ทับกวาง (ป่าไผ่)";
 
@@ -249,7 +254,6 @@
         }
     }
 
-    // 🌟 ฟังก์ชันโหลดการตั้งค่าระบบ (โลโก้ + ชื่อศูนย์) 🌟
     function loadSystemSettings() {
         fetch(scriptURL + '?action=getSettings')
             .then(res => res.json())
@@ -268,21 +272,21 @@
                     sidebarLogos.forEach(icon => {
                         let img = document.createElement('img');
                         img.src = schoolLogoUrl;
-                        // 🌟 ทำให้เป็นวงกลมและใหญ่ขึ้น 20%
-                        img.style.width = '75px'; 
-                        img.style.height = '75px';
+                        // 🌟 เอา Padding ออกเพื่อให้ภาพเต็มวง และปรับขนาดให้ใหญ่ขึ้น
+                        img.style.width = '80px'; 
+                        img.style.height = '80px';
                         img.style.objectFit = 'cover';
                         img.style.borderRadius = '50%';
                         img.style.backgroundColor = '#fff';
-                        img.style.padding = '3px';
+                        img.style.padding = '0px'; 
+                        img.style.border = '2px solid #fff'; // เพิ่มขอบขาวด้านนอกแทน
                         img.className = 'mb-2 shadow-sm';
                         icon.parentNode.replaceChild(img, icon);
                     });
                     
-                    // แทรกโลโก้ลง PDF แบบแนวตั้ง
                     const printLogoContainer = document.getElementById('printRecordLogoContainer');
                     if(printLogoContainer) {
-                        printLogoContainer.innerHTML = `<img src="${schoolLogoUrl}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 50%; margin-bottom: 5px;">`;
+                        printLogoContainer.innerHTML = `<img src="${schoolLogoUrl}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 50%;">`;
                     }
                 }
             })
@@ -291,7 +295,7 @@
 
     $(document).ready(function() {
         applyAccessRights();
-        loadSystemSettings(); // โหลดโลโก้ตอนเปิดหน้า
+        loadSystemSettings();
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
@@ -515,7 +519,7 @@
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
-    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน) 🌟 =================
+    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (อัปเกรด โลโก้มุมซ้าย) 🌟 =================
     function printCrossTab(type) {
         if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
 
@@ -579,16 +583,17 @@
         let html = '';
         const chunk = 28; 
         
-        // 🌟 ดึงโลโก้มาใส่แนวนอน
-        let logoHtml = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 50%; margin-bottom: 4px;"><br>` : '';
+        // 🌟 ตั้งค่าให้โลโก้ไปอยู่มุมซ้ายบนแบบ Absolute Position
+        let logoHtml = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="position: absolute; left: 0; top: 0; width: 70px; height: 70px; object-fit: cover; border-radius: 50%;">` : '';
         
         for(let i=0; i<students.length; i+=chunk) {
             let stdChunk = students.slice(i, i+chunk);
             
             html += `<div class="crosstab-page">`;
             
-            html += `<div class="text-center mb-1">`;
-            html += logoHtml; // แทรกโลโก้
+            // 🌟 สร้างพื้นที่ Header แบบมี Position Relative เพื่อให้โลโก้ยึดติดมุมซ้ายได้
+            html += `<div class="text-center mb-1" style="position: relative; min-height: 70px;">`;
+            html += logoHtml; // แทรกโลโก้มุมซ้าย
             html += `<h5 class="fw-bold m-0 text-dark">${schoolNameText}</h5>`;
             html += `<h4 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h4>`;
             html += `<p class="m-0 text-secondary" style="font-size: 12px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
@@ -651,8 +656,7 @@
         }
 
         document.getElementById('crosstabPrintArea').innerHTML = html;
-        // 🌟 ลด margin นิดนึงเพื่อรับโลโก้ที่เพิ่มเข้ามา (ไม่ให้หลุดหน้า)
-        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 5mm 10mm; }';
+        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 8mm 10mm; }';
         
         document.body.classList.add('printing-crosstab');
 
