@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
     
-    <!-- 🌟 Style สำหรับจัดการหน้ากระดาษ (จะถูกเปลี่ยนค่าด้วย JS) 🌟 -->
     <style id="printPageStyle"></style>
 
     <style>
@@ -27,12 +26,10 @@
         .stat-card { border-radius: 15px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; }
         .stat-card h3 { font-size: 32px; font-weight: 800; color: #4c1d95; margin-bottom: 5px; }
 
-        /* ================= 🖨️ ระบบ Print รวม ================= */
         @media print {
             body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #mainDashboardContent { display: none !important; } /* ซ่อนหน้าจอปกติทั้งหมด */
+            #mainDashboardContent { display: none !important; } 
             
-            /* ควบคุมการแสดงผลตามโหมดที่สั่งปริ๊น */
             body.printing-daily #monthlyPrintArea { display: block !important; width: 100%; }
             body.printing-daily #crosstabPrintArea { display: none !important; }
             
@@ -91,7 +88,7 @@
 
                 <div class="tab-content card-box p-4" id="myTabContent">
                     
-                    <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล (เซ็นรับ-ส่ง แนวตั้ง) 🌟 -->
+                    <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                     <div class="tab-pane fade show active" id="record">
                         <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
                             <div class="col-md-3">
@@ -146,7 +143,7 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 Tab 2: หน้ารายงานผล (ตารางสรุปแนวนอน) 🌟 -->
+                    <!-- 🌟 Tab 2: หน้ารายงานผล -->
                     <div class="tab-pane fade" id="report">
                         <div class="row align-items-end mb-4 bg-light p-3 rounded">
                             <div class="col-md-2">
@@ -167,7 +164,6 @@
                                     <option value="อนุบาล 3">อนุบาล 3</option>
                                 </select>
                             </div>
-                            <!-- 🌟 อัปเกรดปุ่ม PDF แยก 2 ปุ่ม สีเขียวกับสีฟ้า 🌟 -->
                             <div class="col-md-6 text-end d-flex gap-2">
                                 <button class="btn bg-purple btn-sm flex-grow-1 fw-bold text-white" onclick="filterReport()"><i class="fas fa-filter"></i> ดึงข้อมูล</button>
                                 <button class="btn btn-success btn-sm flex-grow-1 fw-bold" onclick="printCrossTab('brush')"><i class="fas fa-tooth"></i> PDF แปรงฟัน</button>
@@ -215,7 +211,6 @@
     </div>
 </div>
 
-<!-- พื้นที่สำหรับเตรียมกระดาษปริ๊น (จะโชว์เฉพาะตอน Print) -->
 <div id="monthlyPrintArea" class="d-none"></div>
 <div id="crosstabPrintArea" class="d-none"></div>
 
@@ -231,6 +226,7 @@
     const userRole = sessionStorage.getItem('userRole') || 'Support';
     let allStudents = [];
     let allTeachers = []; 
+    let allHolidaysList = []; // 🌟 เก็บวันหยุดทั้งหมด
     let rawReportData = [];
     let reportDataTable;
 
@@ -250,8 +246,6 @@
         applyAccessRights();
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        
-        // เซ็ตให้หน้ารายงานผล ถอยไปวันที่ 1 ของเดือนปัจจุบันเสมอ
         const firstDayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
         
         document.getElementById('recordDate').value = todayStr;
@@ -274,6 +268,9 @@
         });
         
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
+        
+        // 🌟 ดึงข้อมูลวันหยุดทั้งหมดมารอไว้เลย
+        fetch(scriptURL + '?action=getAllHolidays').then(res => res.json()).then(data => { allHolidaysList = data.data || data || []; });
     });
 
     function updateRoomDropdown() {
@@ -375,6 +372,7 @@
         }).finally(() => { btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false; });
     }
 
+    // 🌟 ระบบแกะวันที่ครอบจักรวาล
     function getSafeTime(val, isEndOfDay) {
         if (!val) return isEndOfDay ? Infinity : 0;
         let dStr = String(val).trim().replace(/'/g, ""); 
@@ -471,7 +469,7 @@
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
-    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน แยกแปรงฟัน/ดื่มนม) 🌟 =================
+    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน แยกแปรงฟัน/ดื่มนม) พร้อมสรุป 🌟 =================
     function printCrossTab(type) {
         if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
 
@@ -482,54 +480,73 @@
         if(!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกตั้งแต่วันที่ และ ถึงวันที่', 'warning');
         if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้นที่ต้องการปริ๊นรายงาน', 'warning');
 
-        // สร้างชุดข้อมูลวันที่ (ตัดเสาร์-อาทิตย์ทิ้ง)
+        // 🌟 ดึงวันหยุดทั้งหมดมาแปลงเป็น Timestamp ไว้เปรียบเทียบ
+        let holidayTimestamps = allHolidaysList.map(h => getSafeTime(h.Date || h[0] || h.date, false));
+
         let dates = [];
         let cur = new Date(startRaw);
         let end = new Date(endRaw);
+        const thaiDaysShort = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
         
         while(cur <= end) {
             let day = cur.getDay();
-            if(day !== 0 && day !== 6) { dates.push(new Date(cur)); }
+            let cTime = getSafeTime(cur.toISOString().split('T')[0], false);
+            
+            // ข้ามเสาร์-อาทิตย์ และ ข้ามวันหยุดพิเศษ!
+            if(day !== 0 && day !== 6 && !holidayTimestamps.includes(cTime)) { 
+                dates.push(new Date(cur)); 
+            }
             cur.setDate(cur.getDate() + 1);
         }
 
-        if(dates.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการ (จ.-ศ.) ในระยะเวลาที่เลือก', 'warning');
+        if(dates.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการ (จ.-ศ.) ในระยะเวลาที่เลือก (อาจติดวันหยุดทั้งหมด)', 'warning');
 
-        // ดึงเด็กในห้องนี้มา (และพยายามจัดเรียงให้ตรงกับห้อง)
         let students = allStudents.filter(s => s.ClassLevel === cls);
         if(students.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบนักเรียนในระดับชั้นนี้', 'warning');
         
-        // เรียงตามห้อง และ ชื่อ
         students.sort((a,b) => {
             if(a.Room !== b.Room) return String(a.Room).localeCompare(String(b.Room));
             return a.FullName.localeCompare(b.FullName);
         });
 
-        // สร้าง Dictionary แผนที่ข้อมูลให้ค้นหาง่ายขึ้น O(1)
         let reportMap = {};
         rawReportData.forEach(r => {
             let t = getSafeTime(r.Date, false);
             reportMap[`${r.StudentId}_${t}`] = r;
         });
 
-        // กำหนด Theme สีตามประเภท
         let isBrush = (type === 'brush');
         let titleName = isBrush ? 'แปรงฟัน' : 'ดื่มนม';
-        let mainColor = isBrush ? '#16a34a' : '#2563eb'; // เขียวเข้ม : ฟ้าเข้ม
-        let lightColor = isBrush ? '#dcfce7' : '#dbeafe'; // เขียวอ่อน : ฟ้าอ่อน
+        let mainColor = isBrush ? '#16a34a' : '#2563eb'; 
+        let lightColor = isBrush ? '#dcfce7' : '#dbeafe'; 
         let teacherName = getTeacherByClass(cls);
 
+        // 🌟 คำนวณสรุปเปอร์เซ็นต์เฉพาะข้อมูลที่ตรงเงื่อนไข
+        let validRecords = rawReportData.filter(r => {
+            let rTime = getSafeTime(r.Date, false);
+            let matchDate = dates.some(d => getSafeTime(d.toISOString().split('T')[0], false) === rTime);
+            let matchStudent = students.some(s => String(s.StudentId) === String(r.StudentId));
+            return matchDate && matchStudent;
+        });
+        
+        let totalCount = validRecords.length;
+        let checkedCount = validRecords.filter(r => isBrush ? String(r.BrushedTeeth).includes("✅") : String(r.DrankMilk).includes("✅")).length;
+        let percent = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
+
         let html = '';
-        const chunk = 25; // 🌟 บังคับ 25 คนต่อหน้า
+        const chunk = 25; 
         
         for(let i=0; i<students.length; i+=chunk) {
             let stdChunk = students.slice(i, i+chunk);
             
             html += `<div class="crosstab-page">`;
-            html += `<div class="text-center mb-2">`;
+            html += `<div class="text-center mb-3">`;
             html += `<h4 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>`;
             html += `<h3 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h3>`;
-            html += `<p class="m-0 mt-2 fw-bold text-secondary" style="font-size: 14px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
+            html += `<p class="m-0 mt-2 fw-bold text-secondary" style="font-size: 13px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
+            
+            // 🌟 แทรกเปอร์เซ็นต์สรุป
+            html += `<p class="m-0 mt-1 fw-bold" style="font-size: 14px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
             html += `</div>`;
 
             html += `<table class="print-table w-100" style="font-size: 11px;">`;
@@ -539,9 +556,12 @@
             html += `<th width="8%">เลขประจำตัว</th>`;
             html += `<th width="18%" class="text-start">ชื่อ-นามสกุล</th>`;
             
-            dates.forEach(d => { html += `<th>${d.getDate()}</th>`; });
+            // 🌟 เพิ่มตัวย่อวันใต้วันที่
+            dates.forEach(d => { 
+                html += `<th style="line-height: 1.2;">${d.getDate()}<br><span style="font-size: 9px; font-weight: normal; color: #555;">(${thaiDaysShort[d.getDay()]})</span></th>`; 
+            });
             
-            html += `<th width="5%">รวม (วัน)</th>`;
+            html += `<th width="5%" style="line-height: 1.2;">รวม<br><span style="font-size: 9px; font-weight: normal; color: #555;">(วัน)</span></th>`;
             html += `</tr>`;
             html += `</thead><tbody>`;
 
@@ -569,8 +589,7 @@
                         html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
                         total++;
                     } else {
-                        if(rec) html += `<td class="text-center text-danger">x</td>`;
-                        else html += `<td class="text-center text-light">-</td>`;
+                        html += `<td class="text-center text-secondary">-</td>`;
                     }
                 });
                 
@@ -580,7 +599,6 @@
             html += `</tbody></table></div>`;
         }
 
-        // จัดการหน้ากระดาษ
         document.getElementById('crosstabPrintArea').innerHTML = html;
         document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 10mm; }';
         
@@ -589,7 +607,7 @@
         setTimeout(() => {
             window.print();
             document.body.classList.remove('printing-crosstab');
-            document.getElementById('crosstabPrintArea').innerHTML = ''; // ล้างขยะ
+            document.getElementById('crosstabPrintArea').innerHTML = ''; 
         }, 500);
     }
 </script>
