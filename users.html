@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการผู้ใช้งาน - ศพด.ทม.ทับกวาง (ป่าไผ่)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; transition: 0.3s; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
+        .card-box { background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef;}
+        .badge-role-admin { background-color: #fecaca; color: #dc2626; padding: 5px 10px; border-radius: 6px; }
+        .badge-role-teacher { background-color: #dbeafe; color: #2563eb; padding: 5px 10px; border-radius: 6px; }
+        .badge-role-clerk { background-color: #fef08a; color: #ca8a04; padding: 5px 10px; border-radius: 6px; }
+        .badge-role-support { background-color: #e5e7eb; color: #4b5563; padding: 5px 10px; border-radius: 6px; }
+        .badge-status-on { background-color: #dcfce7; color: #16a34a; padding: 5px 12px; border-radius: 20px; font-weight: bold;}
+        .badge-status-off { background-color: #fee2e2; color: #dc2626; padding: 5px 12px; border-radius: 20px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('userRole') !== 'Admin') {
+        alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น!");
+        window.location.href = 'dashboard.html';
+    }
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="growth.html"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <a href="routine.html"><i class="fas fa-tooth me-2"></i> แปรงฟัน-ดื่มนม</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
+            <hr class="text-secondary mx-3">
+            <a href="users.html" class="active"><i class="fas fa-users-cog me-2"></i> จัดการผู้ใช้งาน</a>
+            <a href="settings.html"><i class="fas fa-cogs me-2"></i> ตั้งค่าระบบ</a>
+            <hr class="text-secondary mx-3">
+            <a href="#" onclick="sessionStorage.clear(); window.location.href='index.html';" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold"><i class="fas fa-users-cog text-warning"></i> จัดการผู้ใช้งาน</h3>
+                <button class="btn btn-warning fw-bold shadow-sm" onclick="openUserModal()"><i class="fas fa-plus"></i> เพิ่มผู้ใช้</button>
+            </div>
+
+            <div class="card-box p-4">
+                <div class="table-responsive">
+                    <table id="usersTable" class="table table-hover align-middle text-center w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">ชื่อเต็ม</th>
+                                <th>Username</th>
+                                <th>บทบาท</th>
+                                <th>ชั้น/ห้องเรียน (ถ้ามี)</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold" id="userModalLabel">เพิ่มผู้ใช้งาน</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="isEdit" value="false">
+                <input type="hidden" id="oldUsername" value="">
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-danger">ชื่อ-นามสกุล *</label>
+                        <input type="text" id="uName" class="form-control" placeholder="เช่น ครูใจดี รักเด็ก" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-danger">บทบาท (Role) *</label>
+                        <select id="uRole" class="form-select">
+                            <option value="Teacher">Teacher (ครูประจำชั้น)</option>
+                            <option value="Clerk">Clerk (ธุรการ)</option>
+                            <option value="Support">Support (แม่บ้าน/นักการ)</option>
+                            <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-danger">Username (ใช้ล็อกอิน) *</label>
+                        <input type="text" id="uUsername" class="form-control" placeholder="เช่น teacher01" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-danger">รหัสผ่าน *</label>
+                        <input type="text" id="uPassword" class="form-control" placeholder="ตั้งรหัสผ่าน" required>
+                    </div>
+                    <div class="col-12 bg-light p-3 rounded border">
+                        <label class="form-label fw-bold small text-primary"><i class="fas fa-chalkboard-teacher"></i> สำหรับครูประจำชั้น (ระบุห้องเรียน)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <select id="uClass" class="form-select form-select-sm">
+                                    <option value="">- ระดับชั้น -</option>
+                                    <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                                    <option value="อนุบาล 1">อนุบาล 1</option>
+                                    <option value="อนุบาล 2">อนุบาล 2</option>
+                                    <option value="อนุบาล 3">อนุบาล 3</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select id="uRoom" class="form-select form-select-sm">
+                                    <option value="">- ห้อง -</option>
+                                    <option value="1">ห้อง 1</option><option value="2">ห้อง 2</option><option value="3">ห้อง 3</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold small">สถานะการใช้งาน</label>
+                        <div class="d-flex gap-3 mt-1">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="uStatus" id="sOn" value="เปิดใช้งาน" checked>
+                                <label class="form-check-label text-success fw-bold" for="sOn">เปิดใช้งาน</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="uStatus" id="sOff" value="ปิดใช้งาน">
+                                <label class="form-check-label text-danger fw-bold" for="sOff">ระงับชั่วคราว</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-warning fw-bold" onclick="saveUser()" id="btnSaveUser">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // ⚠️ นำ Web App URL มาใส่
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
+    let dataTable;
+
+    $(document).ready(function() { loadUsers(); });
+
+    function loadUsers() {
+        if (dataTable) { dataTable.destroy(); }
+        Swal.fire({ title: 'กำลังโหลดข้อมูล...', didOpen: () => { Swal.showLoading() }});
+        
+        fetch(scriptURL + '?action=getUsers').then(res => res.json()).then(data => {
+            let users = data.data || [];
+            dataTable = $('#usersTable').DataTable({
+                data: users,
+                columns: [
+                    { data: 'Name', className: 'text-start fw-bold' },
+                    { data: 'Username' },
+                    { 
+                        data: 'Role', 
+                        render: function(data) {
+                            if(data === 'Admin') return `<span class="badge-role-admin"><i class="fas fa-shield-alt"></i> ผู้ดูแลระบบ</span>`;
+                            if(data === 'Teacher') return `<span class="badge-role-teacher"><i class="fas fa-chalkboard-teacher"></i> ครูประจำชั้น</span>`;
+                            if(data === 'Clerk') return `<span class="badge-role-clerk"><i class="fas fa-file-invoice"></i> ธุรการ</span>`;
+                            return `<span class="badge-role-support"><i class="fas fa-hands-helping"></i> เจ้าหน้าที่ทั่วไป</span>`;
+                        }
+                    },
+                    { data: null, render: (data, type, row) => (row.ClassLevel) ? `${row.ClassLevel} ${row.Room ? '/'+row.Room : ''}` : '-' },
+                    { 
+                        data: 'Status',
+                        render: function(data) {
+                            return data === 'ปิดใช้งาน' ? `<span class="badge-status-off">ปิดใช้งาน</span>` : `<span class="badge-status-on">เปิดใช้งาน</span>`;
+                        }
+                    },
+                    { 
+                        data: null, 
+                        render: function(data, type, row) {
+                            let btnEdit = `<button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal('${row.Username}', '${row.Name}', '${row.Role}', '${row.ClassLevel}', '${row.Room}', '${row.Password}', '${row.Status}')"><i class="fas fa-edit"></i></button>`;
+                            let btnDel = row.Role !== 'Admin' ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${row.Username}')"><i class="fas fa-trash"></i></button>` : '';
+                            return btnEdit + btnDel;
+                        }
+                    }
+                ],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
+            });
+            Swal.close();
+        });
+    }
+
+    function openUserModal() {
+        document.getElementById('isEdit').value = "false";
+        document.getElementById('oldUsername').value = "";
+        document.getElementById('uName').value = "";
+        document.getElementById('uUsername').value = "";
+        document.getElementById('uUsername').readOnly = false;
+        document.getElementById('uPassword').value = "";
+        document.getElementById('uRole').value = "Teacher";
+        document.getElementById('uClass').value = "";
+        document.getElementById('uRoom').value = "";
+        document.getElementById('sOn').checked = true;
+        document.getElementById('userModalLabel').innerText = "เพิ่มผู้ใช้งานใหม่";
+        new bootstrap.Modal(document.getElementById('userModal')).show();
+    }
+
+    function openEditModal(username, name, role, cls, rm, pass, status) {
+        document.getElementById('isEdit').value = "true";
+        document.getElementById('oldUsername').value = username;
+        document.getElementById('uName').value = name;
+        document.getElementById('uUsername').value = username;
+        document.getElementById('uUsername').readOnly = true; // ล็อกไม่ให้แก้ Username
+        document.getElementById('uPassword').value = pass;
+        document.getElementById('uRole').value = role;
+        document.getElementById('uClass').value = cls === "undefined" ? "" : cls;
+        document.getElementById('uRoom').value = rm === "undefined" ? "" : rm;
+        if(status === 'ปิดใช้งาน') document.getElementById('sOff').checked = true;
+        else document.getElementById('sOn').checked = true;
+        
+        document.getElementById('userModalLabel').innerText = "แก้ไขผู้ใช้งาน";
+        new bootstrap.Modal(document.getElementById('userModal')).show();
+    }
+
+    function saveUser() {
+        let payload = {
+            isEdit: document.getElementById('isEdit').value === "true",
+            Username: document.getElementById('uUsername').value.trim(),
+            Password: document.getElementById('uPassword').value.trim(),
+            Name: document.getElementById('uName').value.trim(),
+            Role: document.getElementById('uRole').value,
+            ClassLevel: document.getElementById('uClass').value,
+            Room: document.getElementById('uRoom').value,
+            Status: document.querySelector('input[name="uStatus"]:checked').value
+        };
+
+        if(!payload.Username || !payload.Password || !payload.Name) {
+            return Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลในช่องที่มี * ให้ครบถ้วน', 'warning');
+        }
+
+        let btn = document.getElementById('btnSaveUser');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+        btn.disabled = true;
+
+        fetch(scriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=saveUser&data=' + encodeURIComponent(JSON.stringify(payload))
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                Swal.fire('สำเร็จ', data.msg, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                loadUsers();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.msg, 'error');
+            }
+        }).finally(() => {
+            btn.innerHTML = 'บันทึกข้อมูล';
+            btn.disabled = false;
+        });
+    }
+
+    function deleteUser(username) {
+        Swal.fire({
+            title: 'ยืนยันการลบ?',
+            text: `คุณต้องการลบผู้ใช้งาน ${username} ใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'ลบข้อมูล'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'กำลังลบ...', didOpen: () => { Swal.showLoading() }});
+                fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'action=deleteUser&username=' + encodeURIComponent(username)
+                }).then(res => res.json()).then(data => {
+                    if(data.status === 'success') {
+                        Swal.fire('ลบสำเร็จ', data.msg, 'success');
+                        loadUsers();
+                    } else Swal.fire('ผิดพลาด', data.msg, 'error');
+                });
+            }
+        });
+    }
+</script>
+</body>
+</html>
