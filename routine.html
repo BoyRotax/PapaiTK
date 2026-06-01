@@ -38,8 +38,9 @@
 
             .day-page, .crosstab-page { page-break-after: always; width: 100%; position: relative; }
             
-            .print-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 5px; color: black !important; vertical-align: middle; }
+            /* 🌟 บีบ Padding ตารางลง เพื่อให้จุได้ 28 บรรทัด 🌟 */
+            .print-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3.5px 5px !important; color: black !important; vertical-align: middle; }
             .print-table th { font-weight: bold; text-align: center; }
         }
     </style>
@@ -226,7 +227,7 @@
     const userRole = sessionStorage.getItem('userRole') || 'Support';
     let allStudents = [];
     let allTeachers = []; 
-    let allHolidaysList = []; // 🌟 เก็บวันหยุดทั้งหมด
+    let allHolidaysList = []; 
     let rawReportData = [];
     let reportDataTable;
 
@@ -269,7 +270,6 @@
         
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
         
-        // 🌟 ดึงข้อมูลวันหยุดทั้งหมดมารอไว้เลย
         fetch(scriptURL + '?action=getAllHolidays').then(res => res.json()).then(data => { allHolidaysList = data.data || data || []; });
     });
 
@@ -372,7 +372,6 @@
         }).finally(() => { btn.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล'; btn.disabled = false; });
     }
 
-    // 🌟 ระบบแกะวันที่ครอบจักรวาล
     function getSafeTime(val, isEndOfDay) {
         if (!val) return isEndOfDay ? Infinity : 0;
         let dStr = String(val).trim().replace(/'/g, ""); 
@@ -469,7 +468,7 @@
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
-    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน แยกแปรงฟัน/ดื่มนม) พร้อมสรุป 🌟 =================
+    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (อัปเกรดจุได้ 28 คน) 🌟 =================
     function printCrossTab(type) {
         if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
 
@@ -480,7 +479,6 @@
         if(!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกตั้งแต่วันที่ และ ถึงวันที่', 'warning');
         if(!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้นที่ต้องการปริ๊นรายงาน', 'warning');
 
-        // 🌟 ดึงวันหยุดทั้งหมดมาแปลงเป็น Timestamp ไว้เปรียบเทียบ
         let holidayTimestamps = allHolidaysList.map(h => getSafeTime(h.Date || h[0] || h.date, false));
 
         let dates = [];
@@ -492,14 +490,13 @@
             let day = cur.getDay();
             let cTime = getSafeTime(cur.toISOString().split('T')[0], false);
             
-            // ข้ามเสาร์-อาทิตย์ และ ข้ามวันหยุดพิเศษ!
             if(day !== 0 && day !== 6 && !holidayTimestamps.includes(cTime)) { 
                 dates.push(new Date(cur)); 
             }
             cur.setDate(cur.getDate() + 1);
         }
 
-        if(dates.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการ (จ.-ศ.) ในระยะเวลาที่เลือก (อาจติดวันหยุดทั้งหมด)', 'warning');
+        if(dates.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการ (จ.-ศ.) ในระยะเวลาที่เลือก', 'warning');
 
         let students = allStudents.filter(s => s.ClassLevel === cls);
         if(students.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบนักเรียนในระดับชั้นนี้', 'warning');
@@ -521,7 +518,6 @@
         let lightColor = isBrush ? '#dcfce7' : '#dbeafe'; 
         let teacherName = getTeacherByClass(cls);
 
-        // 🌟 คำนวณสรุปเปอร์เซ็นต์เฉพาะข้อมูลที่ตรงเงื่อนไข
         let validRecords = rawReportData.filter(r => {
             let rTime = getSafeTime(r.Date, false);
             let matchDate = dates.some(d => getSafeTime(d.toISOString().split('T')[0], false) === rTime);
@@ -534,20 +530,23 @@
         let percent = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
 
         let html = '';
-        const chunk = 25; 
+        const chunk = 28; // 🌟 เพิ่มเป็น 28 คนเพื่อรองรับห้องที่เด็กเยอะ
         
         for(let i=0; i<students.length; i+=chunk) {
             let stdChunk = students.slice(i, i+chunk);
             
             html += `<div class="crosstab-page">`;
-            html += `<div class="text-center mb-3">`;
-            html += `<h4 class="fw-bold m-0 mb-1">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>`;
-            html += `<h3 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h3>`;
-            html += `<p class="m-0 mt-2 fw-bold text-secondary" style="font-size: 13px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
             
-            // 🌟 แทรกเปอร์เซ็นต์สรุป
-            html += `<p class="m-0 mt-1 fw-bold" style="font-size: 14px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
+            // 🌟 ปรับ Header ให้กระชับขึ้น 🌟
+            html += `<div class="text-center mb-1">`;
+            html += `<h5 class="fw-bold m-0 text-dark">ศพด.ทม.ทับกวาง (ป่าไผ่)</h5>`;
+            html += `<h4 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h4>`;
+            html += `<p class="m-0 text-secondary" style="font-size: 12px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
+            html += `<p class="m-0 fw-bold" style="font-size: 12px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
             html += `</div>`;
+
+            // 🌟 เพิ่มหมายเหตุมุมขวาบน 🌟
+            html += `<div class="text-end mb-1"><span style="font-size: 10px; color: #666;">* หมายเหตุ: เครื่องหมาย <strong>-</strong> หมายถึง ไม่มาเรียน (ไม่มีข้อมูลการทำกิจกรรม)</span></div>`;
 
             html += `<table class="print-table w-100" style="font-size: 11px;">`;
             html += `<thead>`;
@@ -556,12 +555,11 @@
             html += `<th width="8%">เลขประจำตัว</th>`;
             html += `<th width="18%" class="text-start">ชื่อ-นามสกุล</th>`;
             
-            // 🌟 เพิ่มตัวย่อวันใต้วันที่
             dates.forEach(d => { 
-                html += `<th style="line-height: 1.2;">${d.getDate()}<br><span style="font-size: 9px; font-weight: normal; color: #555;">(${thaiDaysShort[d.getDay()]})</span></th>`; 
+                html += `<th style="line-height: 1.1;">${d.getDate()}<br><span style="font-size: 8px; font-weight: normal; color: #555;">(${thaiDaysShort[d.getDay()]})</span></th>`; 
             });
             
-            html += `<th width="5%" style="line-height: 1.2;">รวม<br><span style="font-size: 9px; font-weight: normal; color: #555;">(วัน)</span></th>`;
+            html += `<th width="4%" style="line-height: 1.1;">รวม<br><span style="font-size: 8px; font-weight: normal; color: #555;">(วัน)</span></th>`;
             html += `</tr>`;
             html += `</thead><tbody>`;
 
@@ -589,7 +587,8 @@
                         html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
                         total++;
                     } else {
-                        html += `<td class="text-center text-secondary">-</td>`;
+                        // ถ้าไม่มีข้อมูลในระบบเลย (คือไม่ได้มาเรียน)
+                        html += `<td class="text-center text-secondary" style="font-size: 10px;">-</td>`;
                     }
                 });
                 
@@ -600,7 +599,8 @@
         }
 
         document.getElementById('crosstabPrintArea').innerHTML = html;
-        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 10mm; }';
+        // 🌟 ปรับ margin ของกระดาษให้บางลงเพื่อให้รับได้ 28 บรรทัด
+        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 8mm 10mm; }';
         
         document.body.classList.add('printing-crosstab');
 
