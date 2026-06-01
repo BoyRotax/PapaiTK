@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าระบบ - ศพด.ทม.ทับกวาง (ป่าไผ่)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; transition: 0.3s; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #f39c12; }
+        .card-box { background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef;}
+        .img-preview { width: 100px; height: 100px; object-fit: contain; border-radius: 10px; border: 2px dashed #ccc; padding: 5px; background: #f8f9fa;}
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('userRole') !== 'Admin') {
+        alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น!");
+        window.location.href = 'dashboard.html';
+    }
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="growth.html"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <a href="routine.html"><i class="fas fa-tooth me-2"></i> แปรงฟัน-ดื่มนม</a>
+            <a href="regdata.html"><i class="fas fa-user-plus me-2"></i> จัดการข้อมูลเด็ก</a>
+            <hr class="text-secondary mx-3">
+            <a href="users.html"><i class="fas fa-users-cog me-2"></i> จัดการผู้ใช้งาน</a>
+            <a href="settings.html" class="active"><i class="fas fa-cogs me-2"></i> ตั้งค่าระบบ</a>
+            <hr class="text-secondary mx-3">
+            <a href="#" onclick="sessionStorage.clear(); window.location.href='index.html';" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold"><i class="fas fa-cogs text-secondary"></i> ตั้งค่าระบบ</h3>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card-box p-4">
+                        <form id="settingsForm">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">ชื่อศูนย์พัฒนาเด็กเล็ก/โรงเรียน</label>
+                                <input type="text" id="setSchoolName" class="form-control bg-light" placeholder="เช่น ศพด.ทม.ทับกวาง (ป่าไผ่)">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">สังกัด (เช่น เทศบาล..., สำนักงานเขตพื้นที่...)</label>
+                                <input type="text" id="setAffiliation" class="form-control bg-light" placeholder="เช่น สังกัด เทศบาลเมืองทับกวาง">
+                            </div>
+
+                            <div class="mb-4 border p-3 rounded bg-white">
+                                <label class="form-label fw-bold text-dark">โลโก้โรงเรียน (แสดงในหน้ารายงาน)</label>
+                                <div class="d-flex align-items-center gap-3 mt-2">
+                                    <img id="previewLogo" src="https://cdn-icons-png.flaticon.com/512/3074/3074058.png" class="img-preview shadow-sm" alt="โลโก้">
+                                    <div>
+                                        <input type="file" id="fileLogo" class="form-control form-control-sm mb-2" accept="image/*">
+                                        <small class="text-muted">รองรับ JPG, PNG — ขนาดไฟล์ไม่เกิน 2MB</small>
+                                        <input type="hidden" id="base64Logo" value="">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">ปีการศึกษาปัจจุบัน</label>
+                                <input type="number" id="setYear" class="form-control bg-light" placeholder="เช่น 2569">
+                            </div>
+
+                            <hr>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-warning fw-bold px-5 py-2 shadow-sm" id="btnSaveSet" onclick="saveSettings()">
+                                    <i class="fas fa-save"></i> บันทึกการตั้งค่า
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card-box p-3 bg-light border-0">
+                        <h6 class="fw-bold text-secondary"><i class="fas fa-info-circle"></i> คำแนะนำการตั้งค่า</h6>
+                        <ul class="text-muted small mt-2 ps-3" style="line-height: 1.8;">
+                            <li>ข้อมูลที่บันทึกในหน้านี้ จะถูกนำไปแสดงเป็น <b>"หัวกระดาษ"</b> ในการปริ๊นรายงาน PDF อัตโนมัติในทุกๆ หน้าของระบบ</li>
+                            <li>หากทำการเปลี่ยนโลโก้ รูปภาพจะถูกอัปโหลดและเก็บไว้ใน Google Drive ปลายทางของคุณ</li>
+                            <li>หากเปลี่ยนปีการศึกษา ระบบจะใช้อ้างอิงสำหรับการสร้างรายงานในปีนั้นๆ</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
+
+    $(document).ready(function() { loadSettings(); });
+
+    // แปลงไฟล์รูปเป็น Base64
+    document.getElementById('fileLogo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('previewLogo').src = event.target.result;
+                document.getElementById('base64Logo').value = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function loadSettings() {
+        Swal.fire({ title: 'กำลังดึงข้อมูลตั้งค่า...', didOpen: () => { Swal.showLoading() }});
+        fetch(scriptURL + '?action=getSettings')
+            .then(res => res.json())
+            .then(data => {
+                let s = data.data || {};
+                document.getElementById('setSchoolName').value = s.SchoolName || '';
+                document.getElementById('setAffiliation').value = s.Affiliation || '';
+                document.getElementById('setYear').value = s.AcademicYear || '';
+                
+                if (s.SchoolLogo && s.SchoolLogo !== "") {
+                    let cleanUrl = s.SchoolLogo.replace(/'/g, ""); // ลบเครื่องหมายกันบัค
+                    document.getElementById('previewLogo').src = cleanUrl;
+                    document.getElementById('base64Logo').value = cleanUrl;
+                }
+                Swal.close();
+            }).catch(e => {
+                Swal.fire('ข้อผิดพลาด', 'ดึงข้อมูลล้มเหลว', 'error');
+            });
+    }
+
+    function saveSettings() {
+        let payload = {
+            SchoolName: document.getElementById('setSchoolName').value.trim(),
+            Affiliation: document.getElementById('setAffiliation').value.trim(),
+            AcademicYear: document.getElementById('setYear').value.trim(),
+            SchoolLogo: document.getElementById('base64Logo').value
+        };
+
+        let btn = document.getElementById('btnSaveSet');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+        btn.disabled = true;
+
+        fetch(scriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=saveSettings&data=' + encodeURIComponent(JSON.stringify(payload))
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                Swal.fire('สำเร็จ', data.msg, 'success');
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.msg, 'error');
+            }
+        }).finally(() => {
+            btn.innerHTML = '<i class="fas fa-save"></i> บันทึกการตั้งค่า';
+            btn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
