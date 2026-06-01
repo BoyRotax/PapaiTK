@@ -39,7 +39,7 @@
             .day-page, .crosstab-page { page-break-after: always; width: 100%; position: relative; }
             
             .print-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
-            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3.5px 5px !important; color: black !important; vertical-align: middle; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3px 5px !important; color: black !important; vertical-align: middle; }
             .print-table th { font-weight: bold; text-align: center; }
         }
     </style>
@@ -53,11 +53,10 @@
 <div id="mainDashboardContent">
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <div class="col-md-2 sidebar d-none d-md-block">
                 <div class="text-center mb-4">
                     <i class="fas fa-school fa-3x text-warning mb-2"></i>
-                    <h6 class="text-light">ศพด. ทับกวาง (ป่าไผ่)</h6>
+                    <h6 class="text-light" id="sidebarSchoolName">ศพด. ทับกวาง (ป่าไผ่)</h6>
                 </div>
                 <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
                 <a href="attendance.html" id="menu-attend"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
@@ -70,7 +69,6 @@
                 <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
             </div>
 
-            <!-- Main Content -->
             <div class="col-md-10 p-4">
                 
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -88,8 +86,14 @@
 
                 <div class="tab-content card-box p-4" id="myTabContent">
                     
-                    <!-- 🌟 Tab 1: หน้าบันทึกข้อมูล -->
                     <div class="tab-pane fade show active" id="record">
+                        
+                        <div id="printRecordHeader" class="print-header" style="display: none;">
+                            <div id="printRecordLogoContainer"></div> <h4 class="fw-bold text-dark mb-1" id="printRecordSchoolName">ศพด.ทม.ทับกวาง (ป่าไผ่)</h4>
+                            <h2 class="fw-bold text-dark">ใบเช็คชื่อกิจวัตร แปรงฟัน-ดื่มนม</h2>
+                            <h6 id="printRecordSubtitle" class="text-secondary mt-2">วันที่: -</h6>
+                        </div>
+
                         <div class="row align-items-end mb-4 bg-light p-3 rounded" id="filterSection">
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">วันที่บันทึก:</label>
@@ -143,7 +147,6 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 Tab 2: หน้ารายงานผล -->
                     <div class="tab-pane fade" id="report">
                         <div class="row align-items-end mb-4 bg-light p-3 rounded">
                             <div class="col-md-2">
@@ -229,6 +232,10 @@
     let allHolidaysList = []; 
     let rawReportData = [];
     let reportDataTable;
+    
+    // 🌟 ตัวแปรเก็บข้อมูลองค์กร (ดึงมารอไว้สำหรับ PDF)
+    let schoolLogoUrl = "";
+    let schoolNameText = "ศพด.ทม.ทับกวาง (ป่าไผ่)";
 
     function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
@@ -242,8 +249,50 @@
         }
     }
 
+    // 🌟 ฟังก์ชันโหลดการตั้งค่าระบบ (โลโก้ + ชื่อศูนย์) 🌟
+    function loadSystemSettings() {
+        fetch(scriptURL + '?action=getSettings')
+            .then(res => res.json())
+            .then(data => {
+                let settings = data.data || {};
+                
+                if (settings.SchoolName) {
+                    schoolNameText = settings.SchoolName;
+                    document.getElementById('sidebarSchoolName').innerText = schoolNameText;
+                    document.getElementById('printRecordSchoolName').innerText = schoolNameText;
+                }
+                
+                if (settings.SchoolLogo && settings.SchoolLogo !== "") {
+                    schoolLogoUrl = settings.SchoolLogo.replace(/'/g, "");
+                    const sidebarLogos = document.querySelectorAll('.sidebar .fa-school'); 
+                    sidebarLogos.forEach(icon => {
+                        let img = document.createElement('img');
+                        img.src = schoolLogoUrl;
+                        // 🌟 ทำให้เป็นวงกลมและใหญ่ขึ้น 20%
+                        img.style.width = '75px'; 
+                        img.style.height = '75px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '50%';
+                        img.style.backgroundColor = '#fff';
+                        img.style.padding = '3px';
+                        img.className = 'mb-2 shadow-sm';
+                        icon.parentNode.replaceChild(img, icon);
+                    });
+                    
+                    // แทรกโลโก้ลง PDF แบบแนวตั้ง
+                    const printLogoContainer = document.getElementById('printRecordLogoContainer');
+                    if(printLogoContainer) {
+                        printLogoContainer.innerHTML = `<img src="${schoolLogoUrl}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 50%; margin-bottom: 5px;">`;
+                    }
+                }
+            })
+            .catch(e => console.error('Error loading settings:', e));
+    }
+
     $(document).ready(function() {
         applyAccessRights();
+        loadSystemSettings(); // โหลดโลโก้ตอนเปิดหน้า
+
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         const firstDayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
@@ -268,7 +317,6 @@
         });
         
         fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
-        
         fetch(scriptURL + '?action=getAllHolidays').then(res => res.json()).then(data => { allHolidaysList = data.data || data || []; });
     });
 
@@ -467,6 +515,7 @@
         return (t && t.Name) ? ((t.Title || "") + t.Name) : "ไม่ระบุ";
     }
 
+    // ================= 🌟 ฟังก์ชันพิมพ์แบบ Crosstab (แนวนอน) 🌟 =================
     function printCrossTab(type) {
         if(rawReportData.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณากดปุ่ม ดึงข้อมูล ก่อนสั่งพิมพ์ครับ', 'warning');
 
@@ -530,19 +579,22 @@
         let html = '';
         const chunk = 28; 
         
+        // 🌟 ดึงโลโก้มาใส่แนวนอน
+        let logoHtml = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 50%; margin-bottom: 4px;"><br>` : '';
+        
         for(let i=0; i<students.length; i+=chunk) {
             let stdChunk = students.slice(i, i+chunk);
             
             html += `<div class="crosstab-page">`;
             
             html += `<div class="text-center mb-1">`;
-            html += `<h5 class="fw-bold m-0 text-dark">ศพด.ทม.ทับกวาง (ป่าไผ่)</h5>`;
+            html += logoHtml; // แทรกโลโก้
+            html += `<h5 class="fw-bold m-0 text-dark">${schoolNameText}</h5>`;
             html += `<h4 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h4>`;
             html += `<p class="m-0 text-secondary" style="font-size: 12px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
             html += `<p class="m-0 fw-bold" style="font-size: 12px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
             html += `</div>`;
 
-            // 🌟 แก้ไขหมายเหตุให้ชัดเจนเรื่องมาเรียน/ไม่มาเรียน 🌟
             html += `<div class="text-end mb-1"><span style="font-size: 10px; color: #666;">หมายเหตุ: เครื่องหมาย <strong class="text-danger">X</strong> = มาเรียนแต่ไม่ทำกิจกรรม, <strong>*</strong> = ไม่มาเรียน (ไม่มีข้อมูล)</span></div>`;
 
             html += `<table class="print-table w-100" style="font-size: 11px;">`;
@@ -581,15 +633,13 @@
                     }
                     
                     if(rec) {
-                        // 🌟 มีข้อมูลการมาเรียน
                         if(checked) {
                             html += `<td class="text-center fw-bold" style="color: ${mainColor};">✓</td>`;
                             total++;
                         } else {
-                            html += `<td class="text-center fw-bold text-danger">X</td>`; // มาแต่ไม่แปรง
+                            html += `<td class="text-center fw-bold text-danger">X</td>`; 
                         }
                     } else {
-                        // 🌟 ไม่มีข้อมูล = ไม่มาเรียน (ใส่ดอกจัน)
                         html += `<td class="text-center text-secondary fw-bold" style="font-size: 14px;">*</td>`;
                     }
                 });
@@ -601,7 +651,8 @@
         }
 
         document.getElementById('crosstabPrintArea').innerHTML = html;
-        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 8mm 10mm; }';
+        // 🌟 ลด margin นิดนึงเพื่อรับโลโก้ที่เพิ่มเข้ามา (ไม่ให้หลุดหน้า)
+        document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 5mm 10mm; }';
         
         document.body.classList.add('printing-crosstab');
 
@@ -611,59 +662,6 @@
             document.getElementById('crosstabPrintArea').innerHTML = ''; 
         }, 500);
     }
-
-    // โค้ดสำหรับดึงการตั้งค่าระบบ (ชื่อโรงเรียน, โลโก้, ฯลฯ)
-    function loadSystemSettings() {
-        fetch(scriptURL + '?action=getSettings')
-            .then(res => res.json())
-            .then(data => {
-                let settings = data.data || {};
-                
-                // 1. อัปเดตโลโก้ที่แถบเมนูด้านซ้าย (ถ้ามี)
-                const sidebarLogos = document.querySelectorAll('.sidebar .fa-school'); 
-                const schoolNameElements = document.querySelectorAll('.sidebar h6, .mobile-header h5');
-
-                if (settings.SchoolLogo && settings.SchoolLogo !== "") {
-                    let logoUrl = settings.SchoolLogo.replace(/'/g, "");
-                    // แทนที่ไอคอนโรงเรียนด้วยโลโก้
-                    sidebarLogos.forEach(icon => {
-                        let img = document.createElement('img');
-                        img.src = logoUrl;
-                        img.style.maxHeight = '60px';
-                        img.style.objectFit = 'contain';
-                        img.className = 'mb-2';
-                        icon.parentNode.replaceChild(img, icon);
-                    });
-                }
-
-                if (settings.SchoolName) {
-                    // อัปเดตชื่อโรงเรียนที่แถบเมนู
-                    schoolNameElements.forEach(el => {
-                        // เช็คว่าเป็นเมนูมือถือหรือไม่
-                        if(el.tagName === 'H5') {
-                            el.innerHTML = (settings.SchoolLogo ? `<img src="${settings.SchoolLogo.replace(/'/g, "")}" style="max-height: 24px; margin-right: 8px;">` : `<i class="fas fa-school text-warning me-2"></i>`) + settings.SchoolName;
-                        } else {
-                            el.innerText = settings.SchoolName;
-                        }
-                    });
-
-                    // 2. อัปเดตหัวกระดาษตอนปริ๊น PDF (ค้นหาและแทนที่ข้อความ "ศพด.ทม.ทับกวาง (ป่าไผ่)")
-                    const printHeaders = document.querySelectorAll('.print-header h4, .print-header h5');
-                    printHeaders.forEach(header => {
-                         if (header.innerText.includes("ศพด.ทม.ทับกวาง (ป่าไผ่)") || header.innerText === "ศพด.ทม.ทับกวาง (ป่าไผ่)") {
-                            header.innerText = settings.SchoolName;
-                         }
-                    });
-                }
-            })
-            .catch(e => console.error('ไม่สามารถโหลดการตั้งค่าระบบได้:', e));
-    }
-
-    // เรียกใช้ฟังก์ชันทันทีที่โหลดหน้าเสร็จ
-    $(document).ready(function() {
-        // ... โค้ดเดิมของคุณ ...
-        loadSystemSettings(); // เพิ่มบรรทัดนี้
-    });
 </script>
 </body>
 </html>
