@@ -154,7 +154,7 @@
                 fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json())
             ]);
             if (attRes.status === 'error' || !Array.isArray(attRes.data)) {
-                throw new Error(attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
+                throw new Error(attRes.msg || attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
             }
             const holidays = (holRes.data || holRes || []).map(h => getSafeTime(h.Date || h[0] || h.date));
 
