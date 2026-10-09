@@ -255,7 +255,7 @@
     }
 
     function loadSystemSettings() {
-        fetch(scriptURL + '?action=getSettings')
+        return fetch(scriptURL + '?action=getSettings')
             .then(res => res.json())
             .then(data => {
                 let settings = data.data || {};
@@ -295,7 +295,7 @@
 
     $(document).ready(function() {
         applyAccessRights();
-        loadSystemSettings();
+        const pSettings = loadSystemSettings();
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
@@ -308,7 +308,7 @@
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
         document.getElementById('todayDateShow').innerHTML = `<i class="far fa-calendar-alt text-primary me-1"></i> วันที่ ${today.getDate()} ${thaiMonths[today.getMonth()]} ${today.getFullYear() + 543}`;
 
-        fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { 
+        const pStudents = fetch(scriptURL + '?action=getStudents').then(res => res.json()).then(data => { 
             allStudents = data; 
             const uClass = sessionStorage.getItem('userClass');
             const uRoom = sessionStorage.getItem('userRoom');
@@ -320,8 +320,27 @@
             if (uRoom && uRoom !== "undefined") document.getElementById('filterRoom').value = uRoom;
         });
         
-        fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
-        fetch(scriptURL + '?action=getAllHolidays').then(res => res.json()).then(data => { allHolidaysList = data.data || data || []; });
+        const pTeachers = fetch(scriptURL + '?action=getTeachers').then(res => res.json()).then(data => { allTeachers = data; });
+        const pHolidays = fetch(scriptURL + '?action=getAllHolidays').then(res => res.json()).then(data => { allHolidaysList = data.data || data || []; });
+
+        // เปิดมาจาก attendance.html: ?autoprint=brush|milk&class=...&date=YYYY-MM-DD
+        const qs = new URLSearchParams(location.search);
+        const autoType = qs.get('autoprint');
+        if (autoType === 'brush' || autoType === 'milk') {
+            const autoDate = qs.get('date') || todayStr;
+            Swal.fire({ title: 'กำลังเตรียมรายงาน PDF...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
+            Promise.all([pStudents, pTeachers, pHolidays, pSettings,
+                fetch(scriptURL + '?action=getRoutineReport').then(res => res.json()).then(d => { rawReportData = d.data || []; })
+            ]).then(() => {
+                document.getElementById('repClass').value = qs.get('class') || '';
+                document.getElementById('repStartDate').value = autoDate.slice(0, 8) + '01';
+                document.getElementById('repEndDate').value = autoDate;
+                bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#report"]')).show();
+                filterReport();
+                Swal.close();
+                printCrossTab(autoType);
+            }).catch(() => Swal.fire('ผิดพลาด', 'เตรียมรายงานไม่สำเร็จ กรุณากดปุ่ม ดึงข้อมูล แล้วสั่งพิมพ์เอง', 'error'));
+        }
     });
 
     function updateRoomDropdown() {

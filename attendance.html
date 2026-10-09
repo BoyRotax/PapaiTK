@@ -262,11 +262,18 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'บันทึกสำเร็จ!',
-                    text: 'เช็คชื่อนักเรียนลงฐานข้อมูลเรียบร้อยแล้ว',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
+                    text: 'เช็คชื่อนักเรียนเรียบร้อยแล้ว ต้องการพิมพ์ PDF กิจวัตรเลยหรือไม่?',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-tooth"></i> PDF แปรงฟัน',
+                    denyButtonText: '<i class="fas fa-glass-whiskey"></i> PDF ดื่มนม',
+                    cancelButtonText: 'ไม่พิมพ์',
+                    confirmButtonColor: '#16a34a',
+                    denyButtonColor: '#2563eb'
+                }).then(result => {
                     document.getElementById('attendanceContainer').classList.add('d-none');
+                    if (result.isConfirmed) printRoutinePdf('brush', dateValue, recordsToSave);
+                    else if (result.isDenied) printRoutinePdf('milk', dateValue, recordsToSave);
                 });
             } else {
                 Swal.fire('ผิดพลาด', data.message, 'error');
@@ -279,6 +286,30 @@
             btn.innerHTML = '<i class="fas fa-save"></i> บันทึกการเช็คชื่อ';
             btn.disabled = false;
         });
+    }
+
+    // ================= 3.1 บันทึกกิจวัตร (ค่าเริ่มต้น แปรงฟัน/ดื่มนม ครบทุกคนที่มา) แล้วไปพิมพ์ PDF ที่ routine.html =================
+    async function printRoutinePdf(type, dateValue, records) {
+        Swal.fire({ title: 'กำลังเตรียมรายงาน...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
+        const routines = records.filter(r => r.status === 'มา').map(r => ({
+            date: "'" + r.date, studentId: r.studentId, classLevel: r.classLevel, room: r.room,
+            brushed: true, milk: true
+        }));
+        try {
+            if (routines.length > 0) {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'action=saveRoutine&data=' + encodeURIComponent(JSON.stringify(routines))
+                });
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.message);
+            }
+            const cls = records.length ? records[0].classLevel : '';
+            window.location.href = `routine.html?autoprint=${type}&class=${encodeURIComponent(cls)}&date=${dateValue}`;
+        } catch (e) {
+            Swal.fire('ผิดพลาด', 'บันทึกกิจวัตรไม่สำเร็จ: ' + (e.message || e), 'error');
+        }
     }
 
     // ================= 4. ระบบเช็ควันหยุด =================
