@@ -73,15 +73,20 @@
                             <option value="อนุบาล 3">อนุบาล 3</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <button id="btnPrint" class="btn btn-danger fw-bold w-100" onclick="printAttendance()">
-                            <i class="fas fa-print"></i> พิมพ์ใบเช็คชื่อ PDF
-                        </button>
-                    </div>
+                </div>
+                <hr>
+                <div class="row g-2">
+                    <div class="col-6 col-lg-4"><button class="btn btn-primary btn-print fw-bold w-100" onclick="printAttendance('attend')"><i class="fas fa-user-check"></i> PDF เช็คชื่อ</button></div>
+                    <div class="col-6 col-lg-4"><button class="btn btn-danger btn-print fw-bold w-100" onclick="printAttendance('health')"><i class="fas fa-heartbeat"></i> PDF ตรวจสุขภาพ</button></div>
+                    <div class="col-6 col-lg-4"><button class="btn btn-warning btn-print fw-bold w-100 text-white" onclick="printAttendance('lunch')"><i class="fas fa-utensils"></i> PDF อาหารกลางวัน</button></div>
+                    <div class="col-6 col-lg-4"><button class="btn btn-purple btn-print fw-bold w-100 text-white" style="background:#7c3aed;" onclick="printAttendance('measure')"><i class="fas fa-weight"></i> PDF น้ำหนัก ส่วนสูง</button></div>
+                    <div class="col-6 col-lg-4"><button class="btn btn-success btn-print fw-bold w-100" onclick="printAttendance('brush')"><i class="fas fa-tooth"></i> PDF แปรงฟัน</button></div>
+                    <div class="col-6 col-lg-4"><button class="btn btn-info btn-print fw-bold w-100 text-white" onclick="printAttendance('milk')"><i class="fas fa-glass-whiskey"></i> PDF ดื่มนม</button></div>
                 </div>
                 <p class="text-muted small mt-3 mb-0">
-                    สัญลักษณ์: <b class="text-success">✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล
-                    (แสดงเฉพาะวันทำการ จันทร์–ศุกร์ ที่ไม่ใช่วันหยุด)
+                    PDF เช็คชื่อ: <b class="text-success">✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล<br>
+                    PDF อื่นๆ: <b class="text-success">✓</b> = มาเรียนและทำกิจกรรม (อ้างอิงจากวันที่นักเรียนมา), <b class="text-danger">X</b> = มาเรียนแต่ไม่ทำกิจกรรม (เฉพาะแปรงฟัน/ดื่มนมที่ครูติ๊กไม่ทำ), <b>*</b> = ไม่มาเรียน/ไม่มีข้อมูล<br>
+                    แสดงเฉพาะวันทำการ จันทร์–ศุกร์ ที่ไม่ใช่วันหยุด
                 </p>
             </div>
         </div>
@@ -135,23 +140,36 @@
 
     const fmtThai = d => `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
 
-    async function printAttendance() {
+    const REPORTS = {
+        attend:  { title: 'ใบเช็คชื่อนักเรียน',                 main: '#1d4ed8', light: '#dbeafe', label: 'เช็คชื่อ' },
+        health:  { title: 'บันทึกการตรวจสุขภาพ',               main: '#dc2626', light: '#fee2e2', label: 'ตรวจสุขภาพ' },
+        lunch:   { title: 'บันทึกการรับประทานอาหารกลางวัน',     main: '#ea580c', light: '#ffedd5', label: 'รับประทานอาหารกลางวัน' },
+        measure: { title: 'บันทึกการชั่งน้ำหนัก วัดส่วนสูง',     main: '#7c3aed', light: '#ede9fe', label: 'ชั่งน้ำหนัก วัดส่วนสูง' },
+        brush:   { title: 'รายงานสรุปการแปรงฟัน',               main: '#16a34a', light: '#dcfce7', label: 'แปรงฟัน' },
+        milk:    { title: 'รายงานสรุปการดื่มนม',                main: '#0891b2', light: '#cffafe', label: 'ดื่มนม' }
+    };
+
+    async function printAttendance(type) {
+        type = REPORTS[type] ? type : 'attend';
+        const R = REPORTS[type];
         const startRaw = document.getElementById('repStartDate').value;
         const endRaw = document.getElementById('repEndDate').value;
         const cls = document.getElementById('repClass').value;
         if (!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกช่วงวันที่', 'warning');
         if (!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้น', 'warning');
 
-        const btn = document.getElementById('btnPrint');
+        const btn = { set disabled(v) { document.querySelectorAll('.btn-print').forEach(b => b.disabled = v); } };
         btn.disabled = true;
-        Swal.fire({ title: 'กำลังเตรียมใบเช็คชื่อ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังเตรียมรายงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            const [students, teachers, holRes, attRes] = await Promise.all([
+            const needRoutine = (type === 'brush' || type === 'milk');
+            const [students, teachers, holRes, attRes, routineRes] = await Promise.all([
                 fetch(scriptURL + '?action=getStudents').then(r => r.json()),
                 fetch(scriptURL + '?action=getTeachers').then(r => r.json()),
                 fetch(scriptURL + '?action=getAllHolidays').then(r => r.json()),
-                fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json())
+                fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json()),
+                needRoutine ? fetch(scriptURL + '?action=getRoutineReport').then(r => r.json()) : Promise.resolve(null)
             ]);
             if (attRes.status === 'error' || !Array.isArray(attRes.data)) {
                 throw new Error(attRes.msg || attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
@@ -192,6 +210,31 @@
             const totalRec = sum['มา'] + sum['ขาด'] + sum['ลา'] + sum['ป่วย'];
             const pct = totalRec ? Math.round(sum['มา'] / totalRec * 100) : 0;
 
+            // ใบอื่นๆ: ติ๊กถูกตามวันที่นักเรียนมา (แปรงฟัน/ดื่มนมใช้ค่าที่ครูบันทึกไว้ ถ้ามี)
+            let routineMap = {};
+            if (needRoutine) {
+                if (!routineRes || !Array.isArray(routineRes.data)) throw new Error('ดึงข้อมูลแปรงฟัน-ดื่มนมไม่สำเร็จ');
+                routineRes.data.forEach(r => { routineMap[`${r.StudentId}_${getSafeTime(r.Date)}`] = r; });
+            }
+            const tickRows = list.map((s, si) => {
+                let total = 0, present = 0;
+                const cells = dates.map((d, di) => {
+                    if (perStudent[si].cells[di] !== 'มา') return '*';
+                    present++;
+                    if (needRoutine) {
+                        const rec = routineMap[`${s.StudentId}_${getSafeTime(iso(d))}`];
+                        const col = rec && (type === 'brush' ? rec.BrushedTeeth : rec.DrankMilk);
+                        if (rec && !String(col).includes('✅')) return 'X';
+                    }
+                    total++;
+                    return '✓';
+                });
+                return { s, cells, total, present };
+            });
+            const tickTotal = tickRows.reduce((a, r) => a + r.total, 0);
+            const tickPresent = tickRows.reduce((a, r) => a + r.present, 0);
+            const tickPct = tickPresent ? Math.round(tickTotal / tickPresent * 100) : 0;
+
             const mark = {
                 'มา': '<td class="text-center fw-bold" style="color:#16a34a;">✓</td>',
                 'ขาด': '<td class="text-center fw-bold text-danger">ข</td>',
@@ -201,27 +244,48 @@
             const none = '<td class="text-center text-secondary fw-bold">*</td>';
             const logo = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="position:absolute;left:0;top:0;width:70px;height:70px;object-fit:cover;border-radius:50%;">` : '';
 
+            const isAttend = (type === 'attend');
+            const rows = isAttend ? perStudent : tickRows;
+            const summary = isAttend
+                ? `อัตรามาเรียน: ${pct}% <span class="text-secondary">(มา ${sum['มา']} / ขาด ${sum['ขาด']} / ลา ${sum['ลา']} / ป่วย ${sum['ป่วย']})</span>`
+                : `สรุปการ${R.label}: ${tickPct}% <span class="text-secondary">(${tickTotal}/${tickPresent} รายการ ตามวันที่มาเรียน)</span>`;
+            const legend = isAttend
+                ? `สัญลักษณ์: <b>✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล`
+                : `หมายเหตุ: <b>✓</b> = มาเรียนและทำกิจกรรม${needRoutine ? ', <b class="text-danger">X</b> = มาเรียนแต่ไม่ทำกิจกรรม' : ''}, <b>*</b> = ไม่มาเรียน (ไม่มีข้อมูล)`;
+            const tickCell = {
+                '✓': `<td class="text-center fw-bold" style="color:${R.main};">✓</td>`,
+                'X': '<td class="text-center fw-bold text-danger">X</td>',
+                '*': none
+            };
+
             let html = '';
             const chunk = 22;
-            for (let i = 0; i < perStudent.length; i += chunk) {
+            for (let i = 0; i < rows.length; i += chunk) {
                 html += `<div class="att-page">
                   <div class="text-center mb-1" style="position:relative;min-height:70px;">${logo}
                     <h5 class="fw-bold m-0 text-dark">${schoolNameText}</h5>
-                    <h4 class="fw-bold m-0" style="color:#2563eb;">ใบเช็คชื่อนักเรียน</h4>
+                    <h4 class="fw-bold m-0" style="color:${R.main};">${R.title}</h4>
                     <p class="m-0 text-secondary" style="font-size:12px;">ประจำช่วงเวลา: ${fmtThai(new Date(startRaw + 'T00:00:00'))} ถึง ${fmtThai(end)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>
-                    <p class="m-0 fw-bold" style="font-size:12px;color:#2563eb;">อัตรามาเรียน: ${pct}% <span class="text-secondary">(มา ${sum['มา']} / ขาด ${sum['ขาด']} / ลา ${sum['ลา']} / ป่วย ${sum['ป่วย']})</span></p>
+                    <p class="m-0 fw-bold" style="font-size:12px;color:${R.main};">${summary}</p>
                   </div>
-                  <div class="text-end mb-1"><span style="font-size:10px;color:#666;">สัญลักษณ์: <b>✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล</span></div>
+                  <div class="text-end mb-1"><span style="font-size:10px;color:#666;">${legend}</span></div>
                   <table class="print-table w-100"><thead>
-                    <tr style="background-color:#dbeafe !important;color:#1d4ed8;border-bottom:2px solid #1d4ed8;">
+                    <tr style="background-color:${R.light} !important;color:${R.main};border-bottom:2px solid ${R.main};">
                       <th width="4%">ลำดับ</th><th width="8%">เลขประจำตัว</th><th width="18%" class="text-start">ชื่อ-นามสกุล</th>`;
                 dates.forEach(d => { html += `<th style="line-height:1.1;">${d.getDate()}<br><span style="font-size:8px;font-weight:normal;color:#555;">(${thaiDaysShort[d.getDay()]})</span></th>`; });
-                html += `<th width="3%">มา</th><th width="3%">ขาด</th><th width="3%">ลา</th><th width="3%">ป่วย</th></tr></thead><tbody>`;
-                perStudent.slice(i, i + chunk).forEach((p, idx) => {
+                html += isAttend
+                    ? `<th width="3%">มา</th><th width="3%">ขาด</th><th width="3%">ลา</th><th width="3%">ป่วย</th></tr></thead><tbody>`
+                    : `<th width="4%" style="line-height:1.1;">รวม<br><span style="font-size:8px;font-weight:normal;color:#555;">(วัน)</span></th></tr></thead><tbody>`;
+                rows.slice(i, i + chunk).forEach((p, idx) => {
                     const shortName = String(p.s.FullName).replace(/^เด็กชาย/, 'ด.ช. ').replace(/^เด็กหญิง/, 'ด.ญ. ');
                     html += `<tr><td class="text-center">${i + idx + 1}</td><td class="text-center">${p.s.StudentId}</td><td class="text-start fw-bold">${shortName}</td>`;
-                    p.cells.forEach(k => { html += k ? mark[k] : none; });
-                    html += `<td class="text-center fw-bold">${p.c['มา']}</td><td class="text-center">${p.c['ขาด']}</td><td class="text-center">${p.c['ลา']}</td><td class="text-center">${p.c['ป่วย']}</td></tr>`;
+                    if (isAttend) {
+                        p.cells.forEach(k => { html += k ? mark[k] : none; });
+                        html += `<td class="text-center fw-bold">${p.c['มา']}</td><td class="text-center">${p.c['ขาด']}</td><td class="text-center">${p.c['ลา']}</td><td class="text-center">${p.c['ป่วย']}</td></tr>`;
+                    } else {
+                        p.cells.forEach(k => { html += tickCell[k]; });
+                        html += `<td class="text-center fw-bold" style="color:${R.main};">${p.total}</td></tr>`;
+                    }
                 });
                 html += `</tbody></table></div>`;
             }
