@@ -149,6 +149,19 @@
         milk:    { title: 'รายงานสรุปการดื่มนม',                main: '#0891b2', light: '#cffafe', label: 'ดื่มนม' }
     };
 
+    // เก็บผลการดึงข้อมูลแปรงฟัน-ดื่มนมไว้ตามช่วงวันที่/ชั้น: กดแปรงฟันแล้วกดดื่มนมต่อจะไม่ต้องรออ่านชีตซ้ำ
+    const routineCache = {};
+    function fetchRoutine(startRaw, endRaw, cls) {
+        const key = [startRaw, endRaw, cls].join('|');
+        if (!routineCache[key]) {
+            const q = `&start=${startRaw}&end=${endRaw}&class=${encodeURIComponent(cls)}`;
+            routineCache[key] = fetch(scriptURL + '?action=getRoutineReport' + q)
+                .then(r => r.json())
+                .catch(e => { delete routineCache[key]; throw e; });
+        }
+        return routineCache[key];
+    }
+
     async function printAttendance(type) {
         type = REPORTS[type] ? type : 'attend';
         const R = REPORTS[type];
@@ -160,7 +173,12 @@
 
         const btn = { set disabled(v) { document.querySelectorAll('.btn-print').forEach(b => b.disabled = v); } };
         btn.disabled = true;
-        Swal.fire({ title: 'กำลังเตรียมรายงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const needSlow = (type === 'brush' || type === 'milk');
+        Swal.fire({
+            title: 'กำลังเตรียมรายงาน...',
+            text: needSlow ? 'กำลังอ่านข้อมูลแปรงฟัน-ดื่มนม อาจใช้เวลาสักครู่' : '',
+            allowOutsideClick: false, didOpen: () => Swal.showLoading()
+        });
 
         try {
             const needRoutine = (type === 'brush' || type === 'milk');
@@ -169,7 +187,7 @@
                 fetch(scriptURL + '?action=getTeachers').then(r => r.json()),
                 fetch(scriptURL + '?action=getAllHolidays').then(r => r.json()),
                 fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json()),
-                needRoutine ? fetch(scriptURL + '?action=getRoutineReport').then(r => r.json()) : Promise.resolve(null)
+                needRoutine ? fetchRoutine(startRaw, endRaw, cls) : Promise.resolve(null)
             ]);
             if (attRes.status === 'error' || !Array.isArray(attRes.data)) {
                 throw new Error(attRes.msg || attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
