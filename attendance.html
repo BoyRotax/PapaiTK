@@ -291,7 +291,13 @@
     // ================= 3.1 บันทึกกิจวัตร (ค่าเริ่มต้น แปรงฟัน/ดื่มนม ครบทุกคนที่มา) แล้วไปพิมพ์ PDF ที่ routine.html =================
     async function printRoutinePdf(type, dateValue, records) {
         Swal.fire({ title: 'กำลังเตรียมรายงาน...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
-        const routines = records.filter(r => r.status === 'มา').map(r => ({
+        let existing = new Set();
+        try {
+            const rr = await (await fetch(scriptURL + '?action=getRoutineReport')).json();
+            (rr.data || []).forEach(r => existing.add(String(r.Date).replace(/'/g, '').split(' ')[0] + '_' + r.StudentId));
+        } catch (e) { /* ถ้าเช็คของเดิมไม่ได้ ให้บันทึกต่อตามปกติ */ }
+        // ข้ามเด็กที่มีบันทึกกิจวัตรวันนั้นอยู่แล้ว เพื่อไม่ทับค่าที่ครูติ๊กไว้
+        const routines = records.filter(r => r.status === 'มา' && !existing.has(r.date + '_' + r.studentId)).map(r => ({
             date: "'" + r.date, studentId: r.studentId, classLevel: r.classLevel, room: r.room,
             brushed: true, milk: true
         }));
