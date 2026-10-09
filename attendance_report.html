@@ -85,7 +85,7 @@
                 </div>
                 <p class="text-muted small mt-3 mb-0">
                     PDF เช็คชื่อ: <b class="text-success">✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล<br>
-                    PDF อื่นๆ: <b class="text-success">✓</b> = มาเรียนและทำกิจกรรม (อ้างอิงจากวันที่นักเรียนมา), <b class="text-danger">X</b> = มาเรียนแต่ไม่ทำกิจกรรม (เฉพาะแปรงฟัน/ดื่มนมที่ครูติ๊กไม่ทำ), <b>*</b> = ไม่มาเรียน/ไม่มีข้อมูล<br>
+                    PDF อื่นๆ: <b class="text-success">✓</b> = มาเรียน/ทำกิจกรรม (ดึงจากวันที่นักเรียนมาในการเช็คชื่อ), <b>*</b> = ไม่มาเรียน/ไม่มีข้อมูล<br>
                     แสดงเฉพาะวันทำการ จันทร์–ศุกร์ ที่ไม่ใช่วันหยุด
                 </p>
             </div>
@@ -163,13 +163,11 @@
         Swal.fire({ title: 'กำลังเตรียมรายงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            const needRoutine = (type === 'brush' || type === 'milk');
-            const [students, teachers, holRes, attRes, routineRes] = await Promise.all([
+            const [students, teachers, holRes, attRes] = await Promise.all([
                 fetch(scriptURL + '?action=getStudents').then(r => r.json()),
                 fetch(scriptURL + '?action=getTeachers').then(r => r.json()),
                 fetch(scriptURL + '?action=getAllHolidays').then(r => r.json()),
-                fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json()),
-                needRoutine ? fetch(scriptURL + '?action=getRoutineReport').then(r => r.json()) : Promise.resolve(null)
+                fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json())
             ]);
             if (attRes.status === 'error' || !Array.isArray(attRes.data)) {
                 throw new Error(attRes.msg || attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
@@ -210,22 +208,12 @@
             const totalRec = sum['มา'] + sum['ขาด'] + sum['ลา'] + sum['ป่วย'];
             const pct = totalRec ? Math.round(sum['มา'] / totalRec * 100) : 0;
 
-            // ใบอื่นๆ: ติ๊กถูกตามวันที่นักเรียนมา (แปรงฟัน/ดื่มนมใช้ค่าที่ครูบันทึกไว้ ถ้ามี)
-            let routineMap = {};
-            if (needRoutine) {
-                if (!routineRes || !Array.isArray(routineRes.data)) throw new Error('ดึงข้อมูลแปรงฟัน-ดื่มนมไม่สำเร็จ');
-                routineRes.data.forEach(r => { routineMap[`${r.StudentId}_${getSafeTime(r.Date)}`] = r; });
-            }
+            // ใบอื่นๆ: ติ๊กถูกตามวันที่นักเรียนมาเรียน (ข้อมูลจากการเช็คชื่ออย่างเดียว)
             const tickRows = list.map((s, si) => {
                 let total = 0, present = 0;
                 const cells = dates.map((d, di) => {
                     if (perStudent[si].cells[di] !== 'มา') return '*';
                     present++;
-                    if (needRoutine) {
-                        const rec = routineMap[`${s.StudentId}_${getSafeTime(iso(d))}`];
-                        const col = rec && (type === 'brush' ? rec.BrushedTeeth : rec.DrankMilk);
-                        if (rec && !String(col).includes('✅')) return 'X';
-                    }
                     total++;
                     return '✓';
                 });
@@ -251,10 +239,9 @@
                 : `สรุปการ${R.label}: ${tickPct}% <span class="text-secondary">(${tickTotal}/${tickPresent} รายการ ตามวันที่มาเรียน)</span>`;
             const legend = isAttend
                 ? `สัญลักษณ์: <b>✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล`
-                : `หมายเหตุ: <b>✓</b> = มาเรียนและทำกิจกรรม${needRoutine ? ', <b class="text-danger">X</b> = มาเรียนแต่ไม่ทำกิจกรรม' : ''}, <b>*</b> = ไม่มาเรียน (ไม่มีข้อมูล)`;
+                : `หมายเหตุ: <b>✓</b> = มาเรียน/ทำกิจกรรม, <b>*</b> = ไม่มาเรียน (ไม่มีข้อมูล)`;
             const tickCell = {
                 '✓': `<td class="text-center fw-bold" style="color:${R.main};">✓</td>`,
-                'X': '<td class="text-center fw-bold text-danger">X</td>',
                 '*': none
             };
 

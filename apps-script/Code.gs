@@ -34,7 +34,7 @@ function doGet(e) {
     if (action === "checkHoliday") return createResponse(checkHoliday(e.parameter.date));
     if (action === "getKitchenData") return createResponse(getKitchenSummary());
     if (action === "getSpecialStudents") return getSpecialStudentsList();
-    if (action === "getRoutineReport") return getRoutineReport();
+    if (action === "getRoutineReport") return getRoutineReport(e.parameter);
     if (action === "getPresentStudents") return getPresentStudents(e.parameter.date);
     if (action === "getAttendanceReport") return getAttendanceReport();   // 🌟 ใหม่
     if (action === "getAllHolidays") return getAllHolidays();
@@ -719,16 +719,41 @@ function saveRoutineData(dataParam) {
   } catch (e) { return createResponse({ status: "error", message: e.message }); }
 }
 
-function getRoutineReport() {
+// แปลงวันที่ dd/MM/yyyy (พ.ศ. หรือ ค.ศ., อาจมี ' นำหน้า) เป็นตัวเลข yyyymmdd (ค.ศ.) เพื่อเทียบช่วงวันที่
+function dateKey(str) {
+  var p = String(str).replace(/'/g, "").trim().split(" ")[0].split("/");
+  if (p.length !== 3) return null;
+  var y = parseInt(p[2], 10); if (y > 2400) y -= 543;
+  return y * 10000 + parseInt(p[1], 10) * 100 + parseInt(p[0], 10);
+}
+
+// 🌟 แก้: รับพารามิเตอร์ start, end (yyyy-MM-dd), class เพื่อกรองฝั่งเซิร์ฟเวอร์ ลดข้อมูลที่ส่งกลับ
+// ถ้าไม่ส่งพารามิเตอร์ (เช่น routine.html) จะคืนข้อมูลทั้งหมดเหมือนเดิม
+function getRoutineReport(params) {
   try {
+    params = params || {};
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ROUTINE);
     if (!sheet) return createResponse([]);
-    var data = sheet.getDataRange().getDisplayValues();
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return createResponse({ status: "success", data: [] });
+    // อ่านเฉพาะคอลัมน์ B-G (วันที่ ... ดื่มนม) ไม่อ่านทั้งชีต
+    var data = sheet.getRange(2, 2, lastRow - 1, 6).getDisplayValues();
+
+    var startKey = params.start ? dateKey(params.start.split("-").reverse().join("/")) : null;
+    var endKey = params.end ? dateKey(params.end.split("-").reverse().join("/")) : null;
+    var cls = params["class"] ? String(params["class"]).trim() : "";
+
     var result = [];
-    for (var i = 1; i < data.length; i++) {
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      if (startKey || endKey) {
+        var k = dateKey(row[0]);
+        if (k === null || (startKey && k < startKey) || (endKey && k > endKey)) continue;
+      }
+      if (cls && String(row[2]).trim() !== cls) continue;
       result.push({
-        Date: data[i][1], StudentId: data[i][2], ClassLevel: data[i][3],
-        Room: data[i][4], BrushedTeeth: data[i][5], DrankMilk: data[i][6]
+        Date: row[0], StudentId: row[1], ClassLevel: row[2],
+        Room: row[3], BrushedTeeth: row[4], DrankMilk: row[5]
       });
     }
     return createResponse({ status: "success", data: result });
