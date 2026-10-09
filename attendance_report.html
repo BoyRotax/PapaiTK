@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเช็คชื่อรายเดือน - ศูนย์พัฒนาเด็กเล็กเทศบาลเมืองทับกวาง</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style id="printPageStyle"></style>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; }
+        .sidebar { background: #343a40; color: white; min-height: 100vh; padding-top: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 12px 20px; display: block; font-weight: 600; }
+        .sidebar a:hover, .sidebar a.active { color: white; background: #495057; border-left: 4px solid #3b82f6; }
+        .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        #attPrintArea { display: none; }
+
+        @media print {
+            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #mainContent { display: none !important; }
+            #attPrintArea { display: block !important; width: 100%; }
+            .att-page { page-break-after: always; width: 100%; position: relative; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; }
+            .print-table th, .print-table td { border: 1px solid #000 !important; padding: 3px 4px !important; color: black !important; vertical-align: middle; }
+            .print-table th { font-weight: bold; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'login.html';
+</script>
+
+<div id="mainContent">
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block">
+            <div class="text-center mb-4">
+                <i class="fas fa-school fa-3x text-warning mb-2"></i>
+                <h6 class="text-light" id="sidebarSchoolName">ศพด. ทับกวาง (ป่าไผ่)</h6>
+            </div>
+            <a href="dashboard.html"><i class="fas fa-chart-pie me-2"></i> แดชบอร์ด</a>
+            <a href="attendance.html"><i class="fas fa-user-check me-2"></i> เช็คชื่อนักเรียน</a>
+            <a href="attendance_report.html" class="active"><i class="fas fa-file-pdf me-2"></i> ใบเช็คชื่อรายเดือน</a>
+            <a href="routine.html"><i class="fas fa-tooth me-2"></i> แปรงฟัน-ดื่มนม</a>
+            <a href="growth.html"><i class="fas fa-child me-2"></i> บันทึกพัฒนาการ</a>
+            <hr class="text-secondary">
+            <a href="#" onclick="logout()" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a>
+        </div>
+
+        <div class="col-md-10 p-4">
+            <h3 class="fw-bold mb-4"><i class="fas fa-file-pdf text-danger"></i> ใบเช็คชื่อรายเดือน (พิมพ์ PDF)</h3>
+
+            <div class="card card-stat p-4 border-top border-primary border-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ตั้งแต่วันที่:</label>
+                        <input type="date" id="repStartDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ถึงวันที่:</label>
+                        <input type="date" id="repEndDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">ระดับชั้น:</label>
+                        <select id="repClass" class="form-select">
+                            <option value="">-- เลือกระดับชั้น --</option>
+                            <option value="เตรียมอนุบาล">เตรียมอนุบาล</option>
+                            <option value="อนุบาล 1">อนุบาล 1</option>
+                            <option value="อนุบาล 2">อนุบาล 2</option>
+                            <option value="อนุบาล 3">อนุบาล 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button id="btnPrint" class="btn btn-danger fw-bold w-100" onclick="printAttendance()">
+                            <i class="fas fa-print"></i> พิมพ์ใบเช็คชื่อ PDF
+                        </button>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    สัญลักษณ์: <b class="text-success">✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล
+                    (แสดงเฉพาะวันทำการ จันทร์–ศุกร์ ที่ไม่ใช่วันหยุด)
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="attPrintArea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyagDKJpTH0NTnHhMsHUtZmuhNk8AlyeeTBPa90xR9ezHdp9mncc1jf2GrP5b9TjD9dSQ/exec';
+    const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const thaiDaysShort = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+    let schoolLogoUrl = "";
+    let schoolNameText = "ศพด.ทม.ทับกวาง (ป่าไผ่)";
+
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+    const today = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    document.getElementById('repStartDate').value = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`;
+    document.getElementById('repEndDate').value = iso(today);
+    const uClass = sessionStorage.getItem('userClass');
+    if (uClass && uClass !== 'undefined') document.getElementById('repClass').value = uClass;
+
+    fetch(scriptURL + '?action=getSettings').then(r => r.json()).then(d => {
+        const st = d.data || {};
+        if (st.SchoolName) { schoolNameText = st.SchoolName; document.getElementById('sidebarSchoolName').innerText = schoolNameText; }
+        if (st.SchoolLogo) schoolLogoUrl = String(st.SchoolLogo).replace(/'/g, "");
+    }).catch(() => {});
+
+    // แปลงวันที่ทุกรูปแบบ (dd/mm/พ.ศ., yyyy-mm-dd) เป็น timestamp
+    function getSafeTime(val) {
+        let s = String(val || '').trim().replace(/'/g, '');
+        let y = 1970, m = 0, d = 1;
+        if (s.includes('/')) {
+            const p = s.split(' ')[0].split('/');
+            d = parseInt(p[0], 10); m = parseInt(p[1], 10) - 1; y = parseInt(p[2], 10);
+            if (y > 2400) y -= 543;
+        } else if (s.includes('-') && !s.includes('T')) {
+            const p = s.split('-');
+            y = parseInt(p[0], 10); m = parseInt(p[1], 10) - 1; d = parseInt(p[2], 10);
+        } else {
+            const t = new Date(s);
+            if (!isNaN(t.getTime())) { y = t.getFullYear(); m = t.getMonth(); d = t.getDate(); }
+        }
+        return new Date(y, m, d).getTime();
+    }
+
+    const fmtThai = d => `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
+
+    async function printAttendance() {
+        const startRaw = document.getElementById('repStartDate').value;
+        const endRaw = document.getElementById('repEndDate').value;
+        const cls = document.getElementById('repClass').value;
+        if (!startRaw || !endRaw) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกช่วงวันที่', 'warning');
+        if (!cls) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกระดับชั้น', 'warning');
+
+        const btn = document.getElementById('btnPrint');
+        btn.disabled = true;
+        Swal.fire({ title: 'กำลังเตรียมใบเช็คชื่อ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const [students, teachers, holRes, attRes] = await Promise.all([
+                fetch(scriptURL + '?action=getStudents').then(r => r.json()),
+                fetch(scriptURL + '?action=getTeachers').then(r => r.json()),
+                fetch(scriptURL + '?action=getAllHolidays').then(r => r.json()),
+                fetch(scriptURL + '?action=getAttendanceReport').then(r => r.json())
+            ]);
+            if (attRes.status === 'error' || !Array.isArray(attRes.data)) {
+                throw new Error(attRes.message || 'ยังไม่มี action getAttendanceReport ใน Apps Script');
+            }
+            const holidays = (holRes.data || holRes || []).map(h => getSafeTime(h.Date || h[0] || h.date));
+
+            // วันทำการ
+            const dates = [];
+            const end = new Date(endRaw + 'T00:00:00');
+            for (let cur = new Date(startRaw + 'T00:00:00'); cur <= end; cur.setDate(cur.getDate() + 1)) {
+                const dow = cur.getDay();
+                if (dow !== 0 && dow !== 6 && !holidays.includes(getSafeTime(iso(cur)))) dates.push(new Date(cur));
+            }
+            if (dates.length === 0) { Swal.close(); btn.disabled = false; return Swal.fire('แจ้งเตือน', 'ไม่พบวันทำการในช่วงที่เลือก', 'warning'); }
+
+            const list = students.filter(s => s.ClassLevel === cls).sort((a, b) =>
+                String(a.Room).localeCompare(String(b.Room)) || String(a.FullName).localeCompare(String(b.FullName)));
+            if (list.length === 0) { Swal.close(); btn.disabled = false; return Swal.fire('แจ้งเตือน', 'ไม่พบนักเรียนในระดับชั้นนี้', 'warning'); }
+
+            const map = {};
+            attRes.data.forEach(r => { map[`${r.StudentId}_${getSafeTime(r.Date)}`] = String(r.Status || '').trim(); });
+
+            const t = teachers.find(t => t.AssignedClass === cls);
+            const teacherName = (t && t.Name) ? ((t.Title || '') + t.Name) : 'ไม่ระบุ';
+
+            // สรุปรวมทั้งห้อง (นับเป็นรายการ)
+            let sum = { 'มา': 0, 'ขาด': 0, 'ลา': 0, 'ป่วย': 0 };
+            const perStudent = list.map(s => {
+                const c = { 'มา': 0, 'ขาด': 0, 'ลา': 0, 'ป่วย': 0 };
+                const cells = dates.map(d => {
+                    const st = map[`${s.StudentId}_${getSafeTime(iso(d))}`];
+                    const key = !st ? null : st.includes('ป่วย') ? 'ป่วย' : st.includes('ลา') ? 'ลา' : st.includes('ขาด') ? 'ขาด' : st.includes('มา') ? 'มา' : null;
+                    if (key) { c[key]++; sum[key]++; }
+                    return key;
+                });
+                return { s, c, cells };
+            });
+            const totalRec = sum['มา'] + sum['ขาด'] + sum['ลา'] + sum['ป่วย'];
+            const pct = totalRec ? Math.round(sum['มา'] / totalRec * 100) : 0;
+
+            const mark = {
+                'มา': '<td class="text-center fw-bold" style="color:#16a34a;">✓</td>',
+                'ขาด': '<td class="text-center fw-bold text-danger">ข</td>',
+                'ลา': '<td class="text-center fw-bold" style="color:#b45309;">ล</td>',
+                'ป่วย': '<td class="text-center fw-bold" style="color:#0369a1;">ป</td>'
+            };
+            const none = '<td class="text-center text-secondary fw-bold">*</td>';
+            const logo = schoolLogoUrl ? `<img src="${schoolLogoUrl}" style="position:absolute;left:0;top:0;width:70px;height:70px;object-fit:cover;border-radius:50%;">` : '';
+
+            let html = '';
+            const chunk = 26;
+            for (let i = 0; i < perStudent.length; i += chunk) {
+                html += `<div class="att-page">
+                  <div class="text-center mb-1" style="position:relative;min-height:70px;">${logo}
+                    <h5 class="fw-bold m-0 text-dark">${schoolNameText}</h5>
+                    <h4 class="fw-bold m-0" style="color:#2563eb;">ใบเช็คชื่อนักเรียน</h4>
+                    <p class="m-0 text-secondary" style="font-size:12px;">ประจำช่วงเวลา: ${fmtThai(new Date(startRaw + 'T00:00:00'))} ถึง ${fmtThai(end)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>
+                    <p class="m-0 fw-bold" style="font-size:12px;color:#2563eb;">อัตรามาเรียน: ${pct}% <span class="text-secondary">(มา ${sum['มา']} / ขาด ${sum['ขาด']} / ลา ${sum['ลา']} / ป่วย ${sum['ป่วย']})</span></p>
+                  </div>
+                  <div class="text-end mb-1"><span style="font-size:10px;color:#666;">สัญลักษณ์: <b>✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล</span></div>
+                  <table class="print-table w-100"><thead>
+                    <tr style="background-color:#dbeafe !important;color:#1d4ed8;border-bottom:2px solid #1d4ed8;">
+                      <th width="4%">ลำดับ</th><th width="8%">เลขประจำตัว</th><th width="18%" class="text-start">ชื่อ-นามสกุล</th>`;
+                dates.forEach(d => { html += `<th style="line-height:1.1;">${d.getDate()}<br><span style="font-size:8px;font-weight:normal;color:#555;">(${thaiDaysShort[d.getDay()]})</span></th>`; });
+                html += `<th width="3%">มา</th><th width="3%">ขาด</th><th width="3%">ลา</th><th width="3%">ป่วย</th></tr></thead><tbody>`;
+                perStudent.slice(i, i + chunk).forEach((p, idx) => {
+                    const shortName = String(p.s.FullName).replace(/^เด็กชาย/, 'ด.ช. ').replace(/^เด็กหญิง/, 'ด.ญ. ');
+                    html += `<tr><td class="text-center">${i + idx + 1}</td><td class="text-center">${p.s.StudentId}</td><td class="text-start fw-bold">${shortName}</td>`;
+                    p.cells.forEach(k => { html += k ? mark[k] : none; });
+                    html += `<td class="text-center fw-bold">${p.c['มา']}</td><td class="text-center">${p.c['ขาด']}</td><td class="text-center">${p.c['ลา']}</td><td class="text-center">${p.c['ป่วย']}</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+
+            document.getElementById('attPrintArea').innerHTML = html;
+            document.getElementById('printPageStyle').innerHTML = '@page { size: landscape; margin: 8mm 10mm; }';
+            Swal.close();
+            setTimeout(() => {
+                window.print();
+                document.getElementById('attPrintArea').innerHTML = '';
+                btn.disabled = false;
+            }, 500);
+        } catch (e) {
+            btn.disabled = false;
+            Swal.fire('ผิดพลาด', 'สร้างใบเช็คชื่อไม่สำเร็จ: ' + (e.message || e), 'error');
+        }
+    }
+</script>
+</body>
+</html>
