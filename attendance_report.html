@@ -217,8 +217,9 @@
                 });
                 return { s, c, cells };
             });
-            const totalRec = sum['มา'] + sum['ขาด'] + sum['ลา'] + sum['ป่วย'];
-            const pct = totalRec ? Math.round(sum['มา'] / totalRec * 100) : 0;
+            // ร้อยละคิดจากรายการที่ต้องมาทั้งหมด = จำนวนนักเรียนในชั้น × จำนวนวันทำการ (วันที่ไม่มีข้อมูลนับว่าไม่ได้มา)
+            const expected = list.length * dates.length;
+            const pct = expected ? Math.round(sum['มา'] / expected * 100) : 0;
 
             // ใบอื่นๆ: ติ๊กถูกตามวันที่นักเรียนมาเรียน (ข้อมูลจากการเช็คชื่ออย่างเดียว)
             const tickRows = list.map((s, si) => {
@@ -232,8 +233,7 @@
                 return { s, cells, total, present };
             });
             const tickTotal = tickRows.reduce((a, r) => a + r.total, 0);
-            const tickPresent = tickRows.reduce((a, r) => a + r.present, 0);
-            const tickPct = tickPresent ? Math.round(tickTotal / tickPresent * 100) : 0;
+            const tickPct = expected ? Math.round(tickTotal / expected * 100) : 0;
 
             const mark = {
                 'มา': '<td class="text-center fw-bold" style="color:#16a34a;">✓</td>',
@@ -247,8 +247,8 @@
             const isAttend = (type === 'attend');
             const rows = isAttend ? perStudent : tickRows;
             const summary = isAttend
-                ? `อัตรามาเรียน: ${pct}% <span class="text-secondary">(มา ${sum['มา']} / ขาด ${sum['ขาด']} / ลา ${sum['ลา']} / ป่วย ${sum['ป่วย']})</span>`
-                : `สรุปการ${R.label}: ${tickPct}% <span class="text-secondary">(${tickTotal}/${tickPresent} รายการ ตามวันที่มาเรียน)</span>`;
+                ? `อัตรามาเรียน: ${pct}% <span class="text-secondary">(มา ${sum['มา']} จากที่ต้องมาทั้งหมด ${expected} รายการ | ขาด ${sum['ขาด']} / ลา ${sum['ลา']} / ป่วย ${sum['ป่วย']})</span>`
+                : `สรุปการ${R.label}: ${tickPct}% <span class="text-secondary">(${tickTotal}/${expected} รายการ จากที่ต้องมาทั้งหมด)</span>`;
             const legend = isAttend
                 ? `สัญลักษณ์: <b>✓</b> = มา, <b class="text-danger">ข</b> = ขาด, <b>ล</b> = ลา, <b>ป</b> = ป่วย, <b>*</b> = ไม่มีข้อมูล`
                 : `หมายเหตุ: <b>✓</b> = มาเรียน/ทำกิจกรรม, <b>*</b> = ไม่มาเรียน (ไม่มีข้อมูล)`;
