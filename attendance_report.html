@@ -140,6 +140,18 @@
 
     const fmtThai = d => `${d.getDate()} ${thaiMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
 
+
+    // ช่องลงชื่อท้ายกระดาษ: ซ้าย = ครูประจำชั้น (ตามชั้นที่เลือก), ขวา = ผู้อำนวยการ (แก้ชื่อ/ตำแหน่งได้ที่นี่)
+    const DIRECTOR_NAME = 'นางสุจินดา จักรพล';
+    const DIRECTOR_POSITION = 'ครูวิทยฐานะชำนาญการ<br>รักษาการในตำแหน่งผู้อำนวยการศูนย์พัฒนาเด็กเล็ก (ป่าไผ่)';
+    function signatureHtml(teacherName) {
+        const t = (teacherName && teacherName !== 'ไม่ระบุ') ? teacherName : '......................................';
+        return `<div style="display:flex;justify-content:space-between;margin-top:16px;font-size:12px;line-height:1.7;page-break-inside:avoid;">
+            <div style="width:46%;text-align:center;">(ลงชื่อ)....................................................<br>(${t})<br>ตำแหน่ง ครูประจำชั้น</div>
+            <div style="width:46%;text-align:center;">(ลงชื่อ)....................................................<br>(${DIRECTOR_NAME})<br>ตำแหน่ง ${DIRECTOR_POSITION}</div>
+        </div>`;
+    }
+
     const REPORTS = {
         attend:  { title: 'ใบเช็คชื่อนักเรียน',                 main: '#1d4ed8', light: '#dbeafe', label: 'เช็คชื่อ' },
         health:  { title: 'บันทึกการตรวจสุขภาพ',               main: '#dc2626', light: '#fee2e2', label: 'ตรวจสุขภาพ' },
@@ -246,7 +258,7 @@
             };
 
             let html = '';
-            const chunk = 22;
+            const chunk = 20;
             for (let i = 0; i < rows.length; i += chunk) {
                 html += `<div class="att-page">
                   <div class="text-center mb-1" style="position:relative;min-height:70px;">${logo}
@@ -274,7 +286,7 @@
                         html += `<td class="text-center fw-bold" style="color:${R.main};">${p.total}</td></tr>`;
                     }
                 });
-                html += `</tbody></table></div>`;
+                html += `</tbody></table>${signatureHtml(teacherName)}</div>`;
             }
 
             document.getElementById('attPrintArea').innerHTML = html;
