@@ -607,7 +607,7 @@
             return matchDate && matchStudent;
         });
         
-        let totalCount = validRecords.length;
+        let totalCount = students.length * dates.length; // ที่ต้องมาทั้งหมด = นักเรียนในชั้น × วันทำการ
         let checkedCount = validRecords.filter(r => isBrush ? String(r.BrushedTeeth).includes("✅") : String(r.DrankMilk).includes("✅")).length;
         let percent = totalCount === 0 ? 0 : Math.round((checkedCount / totalCount) * 100);
 
@@ -628,7 +628,7 @@
             html += `<h5 class="fw-bold m-0 text-dark">${schoolNameText}</h5>`;
             html += `<h4 class="fw-bold m-0" style="color: ${mainColor};">รายงานสรุปการ${titleName}</h4>`;
             html += `<p class="m-0 text-secondary" style="font-size: 12px;">ประจำช่วงเวลา: ${formatThaiDatePrint(startRaw)} ถึง ${formatThaiDatePrint(endRaw)} | ระดับชั้น: ${cls} | ครูประจำชั้น: ${teacherName}</p>`;
-            html += `<p class="m-0 fw-bold" style="font-size: 12px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ)</span></p>`;
+            html += `<p class="m-0 fw-bold" style="font-size: 12px; color: ${mainColor};">สรุปการ${titleName}: ${percent}% <span class="text-secondary">(${checkedCount}/${totalCount} รายการ จากที่ต้องมาทั้งหมด)</span></p>`;
             html += `<p class="m-0" style="font-size: 12px;">(นักเรียนทั้งหมด ........... คน &nbsp;|&nbsp; มา ........... คน &nbsp;|&nbsp; ไม่มา ........... คน)</p>`;
             html += `</div>`;
 
